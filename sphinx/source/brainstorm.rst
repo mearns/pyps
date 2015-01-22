@@ -51,6 +51,21 @@ might require writing my own PS interpreter which I don't want to do, it might
 be easier to generate a TeX interpreter.
 
 
+Writers
+------------
+
+Despite only being able to support output to postscript initially (see the
+TeX_ section), I still want to separate front-end and back-end: the object
+stuff, and the thing that actually produces output. Initially, there will only
+be one backend, at least to support typesetting, but in theory we could add
+more.
+
+The division will be supported because every shape will provide an API that
+represents the object as a composition of a few primitives, like lines,
+curves, and paths. No matter how complex the shape is, it must be able to
+break down this way so that writers do not need to know how to output every
+single shape, they only need to know how to do basic primitives.
+
 .. %
    vim: set tw=78:
     
