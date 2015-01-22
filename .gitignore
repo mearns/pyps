@@ -1,3 +1,45 @@
+#Sphinx output
+sphinx/build
+
+#Test output from rst2html
+README.html
+
+#Build files
+build
+dist
+distribute-*.egg
+distribute-*.tar.gz
+*.egg-info
+*.egg
+setuptools-*.zip
+setuptools-*.tar.gz
+
+#Vim swap files.
+.*.sw[mnop]
+
+#Scons database
+.sconsign.dblite
+
+#exuberant tags files
+tags
+
+#Vim session files
+Session.vim
+
+#Compiled python files.
+*.pyc
+*.pyd
+*.pyo
+
+#Backup files
+~*
+*~
+*.orig
+*.backup
+*.bup
+*.bak
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
