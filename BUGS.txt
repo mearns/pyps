@@ -1,0 +1,2 @@
+For a list of known bugs and enhancement request, please see the issue tracker
+in the bitbucket project, at <https://github.com/mearns/pyps>.
