@@ -74,10 +74,10 @@ Misc.
 Contact Information
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-This project is currently hosted on `bitbucket <https://bitbucket.org>`_, 
-at `https://bitbucket.org// <https://bitbucket.org///>`_.
-The primary author is Brian Mearns, whom you can contact through bitbucket at
-`https://bitbucket.org/ <https://bitbucket.org/>`_. 
+This project is currently hosted on `GitHub <https://github.com>`_, 
+at `https://github.com/mearns/pyps <https://github.com/mearns/pyps>`_.
+The primary author is Brian Mearns, whom you can contact through GitHub at
+`https://github.com/mearns/ <https://github.com/mearns/>`_. 
 
 
 Copyright and License
