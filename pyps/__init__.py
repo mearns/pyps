@@ -10,7 +10,7 @@ import abc
 from docit import *
 
 class Point(object):
-    __metclass__ == abc.ABCMeta
+    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def coords(self):
@@ -64,5 +64,8 @@ class Pt(Point):
     @property
     def y(self):
         return self.__y
+
+
+
 
 

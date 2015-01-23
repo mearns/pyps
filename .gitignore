@@ -1,6 +1,10 @@
 #Sphinx output
 sphinx/build
 
+#Test output
+test_output.eps
+test_output.png
+
 #Test output from rst2html
 README.html
 
