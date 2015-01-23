@@ -15,7 +15,234 @@ import abc
 TAU = 2.0 * math.pi
 
 class Shape(object):
+    """
+    This is the base class for all shapes. It defines the interface for shapes
+    and provides some helper functions for those shapes.
+    """
+
     __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def hittest(self, x, y):
+        """
+        Checks to see if the given point is contained by this shape. This
+        should include exactly those points that would be drawn on by this
+        shape, either for outline or fill.
+
+        :param float x: The X coordinate of the point to test.
+        :param float y: The Y coordinate of the point to test.
+
+        :returns bool:
+            Return |TRUE| if and only if the point is contained by this shape,
+            |FALSE| otherwise.
+
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def boundingbox(self):
+        """
+        Returns a `BoundingBox` which completely contains this shape. Ideally,
+        this should be a minimum bounding box, i.e., the smallest possible
+        box that contains the entire shape. But this is not strictly necessary
+        if you have a hard time computing that.
+
+        :rtype: `BoundingBox`
+        """
+        raise NotImplementedError()
+
+    def boundingpoly(self, complexity=0.5):
+        """
+        Returns a polygon which entirely contains this shape. This is a
+        generalization of the `boundingbox` method and it is acceptable to
+        simply delegate to that method, as the default implementation does.
+
+        But ideally, this will be a bounding polygon which fits more tightly
+        around the actual shape, at the cost of being a more complex polygon.
+
+        The optional ``complexity`` parameter specifies a heuristic of how
+        complex the ploygon should be. This is widely open to interpretation
+        but you should consider a value of ``0.0`` to be minimally complex
+        (probably just delegating to `boundingbox`), and a value of ``1.0`` to
+        be maximally complex, with values corresponding to an appropriate
+        intermediate complexity.
+
+        For instance, for a circle, complexity of ``0.0`` might correspond to
+        just the `boundingbox`, while complexity of ``1.0`` might have a
+        100-sided regular polygon which circumscribes the circle. A complexity
+        of ``0.5`` would be somewhere in between, perhaps a 12-sided regular
+        polygon.
+
+        :param float complexity:    Optional parameter specifying a complexity
+            heuristic for the polygon as described above. The range should be
+            from ``0.0`` (minimum complexity) to ``1.0`` (maximum complexity).
+            The default value is ``0.5``.
+
+        :rtype: `Polygon`.
+        """
+        #FIXME XXX: BoundingBox will need to extend some kind of Polygon class.
+        return self.boundingbox()
+
+
+class BoundingBox(object):
+    """
+    A `BoundingBox` is a rectangle which is orthogonal to the X and Y axes.
+    It is typically used to represent the minimum bounding box around a shape,
+    and is returned by `Shape.boundingbox`.
+
+    A `BoundingBox` instance is defined by two opposite corners of the box.
+    Either pair of opposite corners, in either order, can be used. These points
+    can be dynamic points; all methods of the bounding box work dynamically
+    based on the current positions of the given points.
+    """
+
+    #FIXME XXX: Make this a `Shape`.
+
+    def __init__(self, pt1, pt2):
+        pt1 = pyps.Point(pt1)
+        pt2 = pyps.Point(pt2)
+        self._lowerleft = self._LowerLeft(pt1, pt2)
+        self._lowerright = self._LowerRight(pt1, pt2)
+        self._upperleft = self._UpperLeft(pt1, pt2)
+        self._upperright = self._UpperRight(pt1, pt2)
+
+    def width(self):
+        """
+        Returns the width of the bounding box.
+        """
+        return self._lowerright.x - self._lowerleft.x
+
+    def height(self):
+        """
+        Returns the height of the bounding box.
+        """
+        return self._upperleft.y - self._lowerleft.y
+
+    def area(self):
+        return self.width()*self.height()
+
+    @property
+    def lowerleft(self):
+        """
+        Returns a dynamic point representing the lower left corner of the box,
+        which is the point with the minimum X and minimum Y coordinates.
+
+        :rtype: `~pyps.Point`
+        """
+        return self._lowerleft
+
+    @property
+    def lowerright(self):
+        """
+        Returns a dynamic point representing the lower right corner of the box,
+        which is the point with the maximum X and minimum Y coordinates.
+
+        :rtype: `~pyps.Point`
+        """
+        return self._lowerright
+
+    @property
+    def upperleft(self):
+        """
+        Returns a dynamic point representing the upper left corner of the box,
+        which is the point with the minimum X and maximum Y coordinates.
+
+        :rtype: `~pyps.Point`
+        """
+        return self._upperleft
+
+    @property
+    def upperright(self):
+        """
+        Returns a dynamic point representing the upper right corner of the box,
+        which is the point with the maximum X and maximum Y coordinates.
+
+        :rtype: `~pyps.Point`
+        """
+        return self._upperright
+
+    ### We could easily have done a common base class for all of these, and made
+    # each specific implementation very small and simple, but they are already
+    # such trivial implementations that the only reason to do that would be to
+    # save key strokes. So why not put in the effort once at coding time and
+    # improve performance a bit.
+
+    class _LowerLeft(_Point):
+        """
+        Simple dynamic point that represents the lower left point of the box
+        defined by two opposite points, ``pt1`` and ``pt2``.
+
+        The lower left has minimum X coordinate and minimum Y coordinate of
+        the given points.
+        """
+        def __init__(self, pt1, pt2):
+            """
+            :param pt1: One of two opposite points that define the box.
+            :type pt1: Anything castable by `~pyps.Point`.
+
+            :param pt2: The other of the two opposite points that define the box.
+            :type pt2: Anything castable by `~pyps.Point`.
+
+            """
+            self._pt1 = pt1
+            self._pt2 = pt2
+
+        def coords(self):
+            """
+            Implements `Point.coords <pyps.Point.coords>` by dynamically choosing
+            the correct limiting coordinates of the box.
+            """
+            c1 = self._pt1.coords()
+            c2 = self._pt2.coords()
+            return min(c1[0], c2[0]), min(c1[1], c2[1])
+
+    class _UpperLeft(_Point):
+        """
+        Like `_LowerLeft`, but representing the *upper* left point of the box.
+
+        The upper left has minimum X coordinate and maximum Y coordinate of
+        the given points.
+        """
+        def __init__(self, pt1, pt2):
+            self._pt1 = pt1
+            self._pt2 = pt2
+
+        def coords(self):
+            c1 = self._pt1.coords()
+            c2 = self._pt2.coords()
+            return min(c1[0], c2[0]), max(c1[1], c2[1])
+
+    class _LowerRight(_Point):
+        """
+        Like `_LowerLeft`, but representing the lower *right* point of the box.
+
+        The lower right has maximum X coordinate and minimum Y coordinate of
+        the given points.
+        """
+        def __init__(self, pt1, pt2):
+            self._pt1 = pt1
+            self._pt2 = pt2
+
+        def coords(self):
+            c1 = self._pt1.coords()
+            c2 = self._pt2.coords()
+            return max(c1[0], c2[0]), min(c1[1], c2[1])
+
+    class _UpperRight(_Point):
+        """
+        Like `_LowerLeft`, but representing the *upper* *right* point of the box.
+
+        The upper right has maximum X coordinate and maximum Y coordinate of
+        the given points.
+        """
+        def __init__(self, pt1, pt2):
+            self._pt1 = pt1
+            self._pt2 = pt2
+
+        def coords(self):
+            c1 = self._pt1.coords()
+            c2 = self._pt2.coords()
+            return max(c1[0], c2[0]), max(c1[1], c2[1])
 
 
 class Circle(Shape):

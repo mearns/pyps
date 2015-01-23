@@ -14,6 +14,10 @@ class Point(object):
 
     @abc.abstractmethod
     def coords(self):
+        """
+        Returns a two-tuple of floats, giving the X and Y coordinates of the
+        point, respectively.
+        """
         raise NotImplementedError()
 
     def __len__(self):
