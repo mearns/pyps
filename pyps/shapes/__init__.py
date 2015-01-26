@@ -100,8 +100,8 @@ class BoundingBox(object):
     #FIXME XXX: Make this a `Shape`.
 
     def __init__(self, pt1, pt2):
-        pt1 = geom.Point(pt1)
-        pt2 = geom.Point(pt2)
+        pt1 = geom.Point.cast(pt1)
+        pt2 = geom.Point.cast(pt2)
         self._lowerleft = self._LowerLeft(pt1, pt2)
         self._lowerright = self._LowerRight(pt1, pt2)
         self._upperleft = self._UpperLeft(pt1, pt2)
@@ -251,8 +251,11 @@ class Circle(Shape):
     def __init__(self, center, radius, **kwargs):
         super(Circle, self).__init__(**kwargs)
 
-        if not isinstance(center, geom.Point):
+        try:
+            center = geom.Point.cast(center)
+        except TypeError:
             raise TypeError('Center point must be a point: %r' % (center,))
+
         if not isinstance(radius, (float, int, long)):
             raise TypeError('Radius must be numeric: %r' % (radius,))
         if radius <= 0:

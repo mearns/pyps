@@ -2,9 +2,24 @@
 # vim: set fileencoding=utf-8: set encoding=utf-8:
 
 import abc
+import collections
 
 class Point(object):
     __metaclass__ = abc.ABCMeta
+
+    @staticmethod
+    def cast(other):
+        if isinstance(other, Point):
+            return other
+        elif isinstance(other, collections.Sequence):
+            if len(other) == 2:
+                return Pt(*other)
+        elif isinstance(other, (int, float, long)):
+            if other == 0:
+                return Pt(0, 0)
+
+        raise TypeError('Could not cast to a Point: %r' % (other,))
+            
 
     @abc.abstractmethod
     def coords(self):
@@ -68,7 +83,7 @@ class Translation(Point):
     A derived point which is a fixed translation from another Point.
     """
     def __init__(self, origin, dx=0, dy=0):
-        self.__origin = Point(origin)
+        self.__origin = Point.cast(origin)
         self.__dx = float(dx)
         self.__dy = float(dy)
 

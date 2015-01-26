@@ -9,14 +9,14 @@ import abc
 
 from docit import *
 
-from pyps import shapes
+import pyps.shapes
 
 class Document(object):
     def __init__(self):
         self.__shapes = []
 
     def add_shape(self, *shapes):
-        not_shapes = filter(lambda s : not isinstance(s, shapes.Shape), shapes)
+        not_shapes = filter(lambda s : not isinstance(s, pyps.shapes.Shape), shapes)
         if not_shapes:
             raise TypeError('Only Shapes can be added to a Document: %s' % (', '.join(repr(s) for s in not_shapes)))
         self.__shapes.extend(shapes)
