@@ -7,6 +7,6 @@ class Writer(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def write(self, ostream, *shapes):
+    def write(self, ostream, document):
         raise NotImplementedError()
 

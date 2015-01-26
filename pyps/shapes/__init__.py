@@ -5,14 +5,15 @@
 The `shapes` module defines the various built in shape objects.
 """
 
-import pyps
-
 from docit import *
 import math
-
 import abc
 
+from pyps import geom
+
+
 TAU = 2.0 * math.pi
+
 
 class Shape(object):
     """
@@ -99,8 +100,8 @@ class BoundingBox(object):
     #FIXME XXX: Make this a `Shape`.
 
     def __init__(self, pt1, pt2):
-        pt1 = pyps.Point(pt1)
-        pt2 = pyps.Point(pt2)
+        pt1 = geom.Point(pt1)
+        pt2 = geom.Point(pt2)
         self._lowerleft = self._LowerLeft(pt1, pt2)
         self._lowerright = self._LowerRight(pt1, pt2)
         self._upperleft = self._UpperLeft(pt1, pt2)
@@ -127,7 +128,7 @@ class BoundingBox(object):
         Returns a dynamic point representing the lower left corner of the box,
         which is the point with the minimum X and minimum Y coordinates.
 
-        :rtype: `~pyps.Point`
+        :rtype: `~geom.Point`
         """
         return self._lowerleft
 
@@ -137,7 +138,7 @@ class BoundingBox(object):
         Returns a dynamic point representing the lower right corner of the box,
         which is the point with the maximum X and minimum Y coordinates.
 
-        :rtype: `~pyps.Point`
+        :rtype: `~geom.Point`
         """
         return self._lowerright
 
@@ -147,7 +148,7 @@ class BoundingBox(object):
         Returns a dynamic point representing the upper left corner of the box,
         which is the point with the minimum X and maximum Y coordinates.
 
-        :rtype: `~pyps.Point`
+        :rtype: `~geom.Point`
         """
         return self._upperleft
 
@@ -157,7 +158,7 @@ class BoundingBox(object):
         Returns a dynamic point representing the upper right corner of the box,
         which is the point with the maximum X and maximum Y coordinates.
 
-        :rtype: `~pyps.Point`
+        :rtype: `~geom.Point`
         """
         return self._upperright
 
@@ -167,7 +168,7 @@ class BoundingBox(object):
     # save key strokes. So why not put in the effort once at coding time and
     # improve performance a bit.
 
-    class _LowerLeft(_Point):
+    class _LowerLeft(geom.Point):
         """
         Simple dynamic point that represents the lower left point of the box
         defined by two opposite points, ``pt1`` and ``pt2``.
@@ -178,10 +179,10 @@ class BoundingBox(object):
         def __init__(self, pt1, pt2):
             """
             :param pt1: One of two opposite points that define the box.
-            :type pt1: Anything castable by `~pyps.Point`.
+            :type pt1: Anything castable by `~geom.Point`.
 
             :param pt2: The other of the two opposite points that define the box.
-            :type pt2: Anything castable by `~pyps.Point`.
+            :type pt2: Anything castable by `~geom.Point`.
 
             """
             self._pt1 = pt1
@@ -189,14 +190,14 @@ class BoundingBox(object):
 
         def coords(self):
             """
-            Implements `Point.coords <pyps.Point.coords>` by dynamically choosing
+            Implements `geom.Point.coords <geom.Point.coords>` by dynamically choosing
             the correct limiting coordinates of the box.
             """
             c1 = self._pt1.coords()
             c2 = self._pt2.coords()
             return min(c1[0], c2[0]), min(c1[1], c2[1])
 
-    class _UpperLeft(_Point):
+    class _UpperLeft(geom.Point):
         """
         Like `_LowerLeft`, but representing the *upper* left point of the box.
 
@@ -212,7 +213,7 @@ class BoundingBox(object):
             c2 = self._pt2.coords()
             return min(c1[0], c2[0]), max(c1[1], c2[1])
 
-    class _LowerRight(_Point):
+    class _LowerRight(geom.Point):
         """
         Like `_LowerLeft`, but representing the lower *right* point of the box.
 
@@ -228,7 +229,7 @@ class BoundingBox(object):
             c2 = self._pt2.coords()
             return max(c1[0], c2[0]), min(c1[1], c2[1])
 
-    class _UpperRight(_Point):
+    class _UpperRight(geom.Point):
         """
         Like `_LowerLeft`, but representing the *upper* *right* point of the box.
 
@@ -250,7 +251,7 @@ class Circle(Shape):
     def __init__(self, center, radius, **kwargs):
         super(Circle, self).__init__(**kwargs)
 
-        if not isinstance(center, pyps.Point):
+        if not isinstance(center, geom.Point):
             raise TypeError('Center point must be a point: %r' % (center,))
         if not isinstance(radius, (float, int, long)):
             raise TypeError('Radius must be numeric: %r' % (radius,))
@@ -278,4 +279,14 @@ class Circle(Shape):
 
     def getArea(self):
         return math.pi * (self._radius * self._radius)
+
+    def hittest(self, x, y):
+        dx = self._center.x - x
+        dy = self._center.y - y
+        return dx*dx + dy*dy <= self._radius * self._radius
+
+    def boundingbox(self):
+        lowerleft = self._center.translate(-(self._radius), -(self._radius))
+        upperright = self._center.translate(self._radius, self._radius)
+        return BoundingBox(lowerleft, upperright)
 

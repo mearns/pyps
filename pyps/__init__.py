@@ -9,63 +9,27 @@ import abc
 
 from docit import *
 
-class Point(object):
-    __metaclass__ = abc.ABCMeta
+from pyps import shapes
 
-    @abc.abstractmethod
-    def coords(self):
-        """
-        Returns a two-tuple of floats, giving the X and Y coordinates of the
-        point, respectively.
-        """
-        raise NotImplementedError()
+class Document(object):
+    def __init__(self):
+        self.__shapes = []
 
-    def __len__(self):
-        return 2;
+    def add_shape(self, *shapes):
+        not_shapes = filter(lambda s : not isinstance(s, shapes.Shape), shapes)
+        if not_shapes:
+            raise TypeError('Only Shapes can be added to a Document: %s' % (', '.join(repr(s) for s in not_shapes)))
+        self.__shapes.extend(shapes)
 
-    def __getitem__(self, idx):
-        try:
-            return self.coords()[idx]
-        except IndexError, e:
-            if idx >= 2:
-                raise IndexError("Points have exactly two elements.")
-            raise
+    def get_shapes(self):
+        return tuple(self.__shapes)
 
-    @property
-    def x(self):
-        return self.coords()[0]
+    def shape_count(self):
+        return len(self.__shapes)
 
-    @property
-    def y(self):
-        return self.coords()[1]
+    def get_shape(self, idx):
+        return self.__shapes[idx]
 
-    def __str__(self):
-        coords = self.coords()
-        return "(%s,%s)" % (coords[0], coords[1])
-
-    def __repr__(self):
-        return "%s%s" % (type(self).__name__, self.__str__())
-
-
-
-class Pt(Point):
-    def __init__(self, x, y):
-        self.__x = x
-        self.__y = y
-        self.__coords = (x, y)
-
-    def coords(self):
-        return self.__coords
-
-    @property
-    def x(self):
-        return self.__x
-
-    @property
-    def y(self):
-        return self.__y
-
-
-
-
+    def itershapes(self):
+        return iter(self.__shapes)
 
