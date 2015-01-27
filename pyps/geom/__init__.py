@@ -135,9 +135,3 @@ class Translation(Point):
         ox, oy = self.__origin.coords()
         return (ox + self.__dx, oy + self.__dy)
 
-
-
-if __name__ == '__main__':
-    pass
-
-

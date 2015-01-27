@@ -15,6 +15,7 @@ from pyps import geom
 TAU = 2.0 * math.pi
 
 
+
 class Shape(object):
     """
     This is the base class for all shapes. It defines the interface for shapes
@@ -22,6 +23,20 @@ class Shape(object):
     """
 
     __metaclass__ = abc.ABCMeta
+
+    def __init__(self, title=None):
+        self._title = title
+
+    def set_title(self, title):
+        self._title = title
+
+    def title(self):
+        return self._title
+
+    def __str__(self):
+        if self._title:
+            return self._title
+        return repr(self)
 
     @abc.abstractmethod
     def hittest(self, x, y):
@@ -83,6 +98,11 @@ class Shape(object):
         """
         #FIXME XXX: BoundingBox will need to extend some kind of Polygon class.
         return self.boundingbox()
+
+    @abc.abstractmethod
+    def render(self, capabilities=[]):
+        raise NotImplementedError()
+        
 
 
 class BoundingBox(object):
@@ -292,4 +312,8 @@ class Circle(Shape):
         lowerleft = self._center.translate(-(self._radius), -(self._radius))
         upperright = self._center.translate(self._radius, self._radius)
         return BoundingBox(lowerleft, upperright)
+
+    def render(self, capabilities=[]):
+        x, y = self._center.coords()
+        return [("circle", x, y, self._radius),]
 
