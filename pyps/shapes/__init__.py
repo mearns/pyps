@@ -283,12 +283,17 @@ class Circle(Shape):
         self._radius = float(radius)
 
         self._fill = kwargs.pop('fill', None)
+        self._stroke = kwargs.pop('stroke', (0, 0, 0))
 
         super(Circle, self).__init__(**kwargs)
 
     @property
     def fill(self):
         return self._fill
+
+    @property
+    def stroke(self):
+        return self._stroke
 
     @property
     def center(self):
@@ -321,5 +326,5 @@ class Circle(Shape):
 
     def render(self, capabilities=[]):
         x, y = self._center.coords()
-        return [("circle", x, y, self._radius, self._fill),]
+        return [("circle", x, y, self._radius, self._fill, self._stroke),]
 

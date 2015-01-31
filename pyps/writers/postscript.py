@@ -10,17 +10,23 @@ class EPSWriter(Writer):
     """
 
     def render_fill(self, color):
-        return "gsave %f %f %f setrgbcolor fill grestore" % tuple(map(lambda c : float(c)/255.0, color))
+        if color is None:
+            return ''
+        else:
+            return ' gsave %f %f %f setrgbcolor fill grestore ' % tuple(map(lambda c : float(c)/255.0, color))
+
+    def render_stroke(self, color):
+        if color is None:
+            return ''
+        else:
+            return ' gsave %f %f %f setrgbcolor stroke grestore ' % tuple(map(lambda c : float(c)/255.0, color))
 
     def render_primitive(self, primitive):
         command = primitive[0]
-        fill = primitive[-1]
-        if command == "circle":
-            if fill is None:
-                fill_cmd = ''
-            else:
-                fill_cmd = self.render_fill(fill)
-            return "%f %f %f 0 360 arc closepath %s stroke" % (primitive[1], primitive[2], primitive[3], fill_cmd)
+        fill = primitive[-2]
+        stroke = primitive[-1]
+        if command == 'circle':
+            return '%f %f %f 0 360 arc closepath %s %s' % (primitive[1], primitive[2], primitive[3], self.render_fill(fill), self.render_stroke(stroke))
 
         raise KeyError('Unknow primitive: %s' % command)
     
