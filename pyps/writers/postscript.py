@@ -13,13 +13,13 @@ class EPSWriter(Writer):
         if color is None:
             return ''
         else:
-            return ' gsave %f %f %f setrgbcolor fill grestore ' % tuple(map(lambda c : float(c)/255.0, color))
+            return ' %f %f %f setrgbcolor fill ' % tuple(map(lambda c : float(c)/255.0, color))
 
     def render_stroke(self, color):
         if color is None:
             return ''
         else:
-            return ' gsave %f %f %f setrgbcolor stroke grestore ' % tuple(map(lambda c : float(c)/255.0, color))
+            return ' %f %f %f setrgbcolor stroke ' % tuple(map(lambda c : float(c)/255.0, color))
 
     def render_primitive(self, primitive):
         command = primitive[0]
@@ -41,7 +41,7 @@ class EPSWriter(Writer):
         for shape in document.itershapes():
             if verbose:
                 ostream.write("%% Shape: %s\n" % str(shape))
-            ostream.write("\n".join(self.render_primitive(p) for p in shape.render()))
+            ostream.write("\n".join(('gsave %s grestore' % self.render_primitive(p)) for p in shape.render()))
             ostream.write("\n\n")
 
         ostream.write(r"""
