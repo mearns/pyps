@@ -10,7 +10,7 @@ class EPSWriter(Writer):
     """
 
     def render_fill(self, color):
-        return "gsave %f %f %f setrgbcolor fill grestore" % color
+        return "gsave %f %f %f setrgbcolor fill grestore" % tuple(map(lambda c : float(c)/255.0, color))
 
     def render_primitive(self, primitive):
         command = primitive[0]
