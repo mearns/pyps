@@ -13,13 +13,13 @@ class EPSWriter(Writer):
         if color is None:
             return ''
         else:
-            return ' %f %f %f setrgbcolor fill ' % tuple(map(lambda c : float(c)/255.0, color))
+            return ' gsave %f %f %f setrgbcolor fill grestore ' % tuple(map(lambda c : float(c)/255.0, color))
 
     def render_stroke(self, color):
         if color is None:
             return ''
         else:
-            return ' %f %f %f setrgbcolor stroke ' % tuple(map(lambda c : float(c)/255.0, color))
+            return ' gsave %f %f %f setrgbcolor stroke grestore ' % tuple(map(lambda c : float(c)/255.0, color))
 
     def render_primitive(self, primitive):
         command = primitive[0]
