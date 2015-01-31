@@ -269,8 +269,6 @@ class BoundingBox(object):
 class Circle(Shape):
 
     def __init__(self, center, radius, **kwargs):
-        super(Circle, self).__init__(**kwargs)
-
         try:
             center = geom.Point.cast(center)
         except TypeError:
@@ -283,6 +281,14 @@ class Circle(Shape):
 
         self._center = center
         self._radius = float(radius)
+
+        self._fill = kwargs.pop('fill', None)
+
+        super(Circle, self).__init__(**kwargs)
+
+    @property
+    def fill(self):
+        return self._fill
 
     @property
     def center(self):
@@ -315,5 +321,5 @@ class Circle(Shape):
 
     def render(self, capabilities=[]):
         x, y = self._center.coords()
-        return [("circle", x, y, self._radius),]
+        return [("circle", x, y, self._radius, self._fill),]
 
