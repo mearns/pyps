@@ -20,7 +20,6 @@ if __name__ == '__main__':
     with open('test_output.eps', 'wb') as ostream:
         writer.write(ostream, doc, verbose=True)
 
-
     subprocess.check_call(['convert', 'test_output.eps', 'test_output.png'], shell=True)
 
 
