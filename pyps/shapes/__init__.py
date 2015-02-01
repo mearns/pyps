@@ -16,10 +16,10 @@ TAU = 2.0 * math.pi
 
 
 class Paintable(object):
-    def __init__(self, stroke=None, fill=None, stroke_width=None):
+    def __init__(self, stroke=None, fill=None, stroke_width=1.0):
         self._stroke = stroke
         self._fill = fill
-        self._stroke_width = stroke_width
+        self._stroke_width = geom.Length.cast(stroke_width, 'Stroke-width must be a length: %r' % (stroke_width,))
 
     @property
     def fill(self):
@@ -46,6 +46,7 @@ class Path(Paintable):
         self._components = []
         if paint is not None:
             kwargs.setdefault('stroke', paint.stroke)
+            kwargs.setdefault('stroke_width', paint.stroke_width)
             kwargs.setdefault('fill', paint.fill)
         super(Path, self).__init__(**kwargs)
 
@@ -190,6 +191,12 @@ class Shape(object):
     def render(self, capabilities=[]):
         raise NotImplementedError()
         
+
+class PaintableShape(Shape, Paintable):
+    def __init__(self, title=None, **kwargs):
+        Shape.__init__(self, title)
+        kwargs.setdefault('stroke', (0, 0, 0))
+        Paintable.__init__(self, **kwargs)
 
 
 class BoundingBox(object):
@@ -353,7 +360,7 @@ class BoundingBox(object):
             return max(c1[0], c2[0]), max(c1[1], c2[1])
 
 
-class Circle(Shape):
+class Circle(PaintableShape):
 
     def __init__(self, center, radius, **kwargs):
         try:
@@ -369,18 +376,7 @@ class Circle(Shape):
         self._center = center
         self._radius = float(radius)
 
-        self._fill = kwargs.pop('fill', None)
-        self._stroke = kwargs.pop('stroke', (0, 0, 0))
-
         super(Circle, self).__init__(**kwargs)
-
-    @property
-    def fill(self):
-        return self._fill
-
-    @property
-    def stroke(self):
-        return self._stroke
 
     @property
     def center(self):

@@ -27,7 +27,7 @@ class EPSWriter(Writer):
         if fill:
             ps += '\n %s setrgbcolor gsave fill grestore' % (self.render_color(fill))
         if stroke:
-            ps += '\n %s setrgbcolor stroke' % (self.render_color(stroke))
+            ps += '\n %s setrgbcolor %f setlinewidth stroke' % (self.render_color(stroke), path.stroke_width)
 
         return ps
 
