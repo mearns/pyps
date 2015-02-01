@@ -3,26 +3,52 @@
 
 from pyps.writers import Writer
 
+from pyps.shapes import Path
+
 
 class EPSWriter(Writer):
     """
     A writer for generated Encapsulated PostScript files.
     """
 
-    def render_fill(self, color):
-        return "gsave %f %f %f setrgbcolor fill grestore" % tuple(map(lambda c : float(c)/255.0, color))
+    def render_color(self, color):
+        return ' '.join(str(float(c)/255.0) for c in color)
 
-    def render_primitive(self, primitive):
-        command = primitive[0]
-        fill = primitive[-1]
-        if command == "circle":
-            if fill is None:
-                fill_cmd = ''
+    def render_path(self, path):
+        if not isinstance(path, Path):
+            raise TypeError('Render returned non-Path: %r' % (path,))
+
+        ps = ''
+        ps += '\n '.join(self._render_path_component(comp) for comp in path)
+
+        fill = path.fill
+        stroke = path.stroke
+
+        if fill:
+            ps += '\n %s setrgbcolor gsave fill grestore' % (self.render_color(fill))
+        if stroke:
+            ps += '\n %s setrgbcolor %f setlinewidth stroke' % (self.render_color(stroke), path.stroke_width)
+
+        return ps
+
+    def _render_path_component(self, comp):
+            command = comp[0]
+            if command == 'M':
+                return '%f %f moveto' % comp[1:]
+            elif command == 'm':
+                return '%f %f rmoveto' % comp[1:]
+            elif command == 'L':
+                return '%f %f lineto' % comp[1:]
+            elif command == 'l':
+                return '%f %f rlineto' % comp[1:]
+            elif command == 'a':
+                cx, cy, r, b, e, ccw = comp[1:]
+                op = 'arc' if ccw else 'arcn'
+                return '%s %s %s %s %s %s' % (cx, cy, r, b, e, op)
             else:
-                fill_cmd = self.render_fill(fill)
-            return "%f %f %f 0 360 arc closepath %s stroke" % (primitive[1], primitive[2], primitive[3], fill_cmd)
+                raise ValueError('Unknown path component command: %r' % (command,))
+                
 
-        raise KeyError('Unknow primitive: %s' % command)
     
     def write(self, ostream, document, verbose=False):
         ostream.write(r"""%!PS-Adobe-3.0 EPSF-3.0
@@ -35,7 +61,7 @@ class EPSWriter(Writer):
         for shape in document.itershapes():
             if verbose:
                 ostream.write("%% Shape: %s\n" % str(shape))
-            ostream.write("\n".join(self.render_primitive(p) for p in shape.render()))
+            ostream.write("\n".join(('newpath %s' % self.render_path(p)) for p in shape.render()))
             ostream.write("\n\n")
 
         ostream.write(r"""
