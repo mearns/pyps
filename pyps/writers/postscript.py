@@ -11,12 +11,8 @@ class EPSWriter(Writer):
     A writer for generated Encapsulated PostScript files.
     """
 
-    def render_color(self, color, prepend=None, append=None):
-        if color is None:
-            return ''
-
-        color_str = ' '.join(str(float(c)/255.0) for c in color)
-        return (prepend if prepend else '') + ('%s setrgbcolor' % color_str) + (append if append else '')
+    def render_color(self, color):
+        return ' '.join(str(float(c)/255.0) for c in color)
 
     def render_path(self, path):
         if not isinstance(path, Path):
@@ -24,7 +20,14 @@ class EPSWriter(Writer):
 
         ps = ''
         ps += '\n '.join(self._render_path_component(comp) for comp in path)
-        ps += '\n 0 0 0 setrgbcolor stroke'
+
+        fill = path.fill
+        stroke = path.stroke
+
+        if fill:
+            ps += '\n %s setrgbcolor gsave fill grestore' % (self.render_color(fill))
+        if stroke:
+            ps += '\n %s setrgbcolor stroke' % (self.render_color(stroke))
 
         return ps
 

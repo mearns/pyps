@@ -42,8 +42,11 @@ class Paintable(object):
 
 class Path(Paintable):
 
-    def __init__(self, **kwargs):
+    def __init__(self, paint=None, **kwargs):
         self._components = []
+        if paint is not None:
+            kwargs.setdefault('stroke', paint.stroke)
+            kwargs.setdefault('fill', paint.fill)
         super(Path, self).__init__(**kwargs)
 
     def __str__(self):
@@ -409,5 +412,5 @@ class Circle(Shape):
         return BoundingBox(lowerleft, upperright)
 
     def render(self, capabilities=[]):
-        return [Path().arc(self._center, self._radius)]
+        return [Path(paint=self).arc(self._center, self._radius)]
 
