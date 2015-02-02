@@ -33,7 +33,7 @@ setup(
     #Other pypi packages that are dependencies for this package.
     # To specify a particular version, do like 'package (>=1.2.3)'
     requires = [
-        #'docit',
+        'docit',
     ],
 
     #pypi packages that aren't necessarily required by the package, but are
@@ -45,7 +45,7 @@ setup(
         'sphinx_rtd_theme',
         'nosetp',
 
-        #'docit',
+        'docit',
     ],
 
     entry_points = {
