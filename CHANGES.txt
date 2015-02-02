@@ -1,4 +1,4 @@
 
-Pre-Rel 1   -   v1.0.0.0    -   ????-??-??
+Pre-Rel 1
     [*] Initial public release.
 
