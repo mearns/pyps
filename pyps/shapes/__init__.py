@@ -15,6 +15,94 @@ from pyps import geom
 TAU = 2.0 * math.pi
 
 
+class Paintable(object):
+    def __init__(self, stroke=None, fill=None, stroke_width=1.0):
+        self._stroke = stroke
+        self._fill = fill
+        self._stroke_width = geom.Length.cast(stroke_width, 'Stroke-width must be a length: %r' % (stroke_width,))
+
+    @property
+    def fill(self):
+        return self._fill
+
+    @property
+    def stroke(self):
+        return self._stroke
+
+    @property
+    def stroke_width(self):
+        return self._stroke_width
+
+    def has_fill(self):
+        return self._fill is not None
+
+    def has_stroke(self):
+        return self._stroke is not None
+
+
+class Path(Paintable):
+
+    def __init__(self, paint=None, **kwargs):
+        self._components = []
+        if paint is not None:
+            kwargs.setdefault('stroke', paint.stroke)
+            kwargs.setdefault('stroke_width', paint.stroke_width)
+            kwargs.setdefault('fill', paint.fill)
+        super(Path, self).__init__(**kwargs)
+
+    def __str__(self):
+        return '\n    '.join(' '.join(str(x) for x in comp) for comp in self._components)
+
+    def __iter__(self):
+        return iter(self._components)
+
+    def __len__(self):
+        return len(self._components)
+
+    def __getitem__(self, idx):
+        return self._components[idx]
+
+    def _add(self, command, *args):
+        self._components.append(tuple([command] + list(args)))
+        return self
+
+    def moveTo(self, pt):
+        #moveto
+        pt = geom.Point.cast(pt, 'Move-to argument must be a point: %r' % (pt,))
+        return self._add('M', pt.x, pt.y)
+        
+    def lineTo(self, pt):
+        #lineto
+        pt = geom.Point.cast(pt, 'Line-to argument must be a point: %r' % (pt,))
+        return self._add('L', pt.x, pt.y)
+
+    def move(self, dx, dy):
+        #rmoveto
+        dx = geom.Length.cast(dx, 'Move dx argument must be a length: %r' % (dx,))
+        dy = geom.Length.cast(dy, 'Move dy argument must be a length: %r' % (dy,))
+        return self._add('m', float(dx), float(dy))
+
+    def line(self, dx, dy):
+        #rlineto
+        #rmoveto
+        dx = geom.Length.cast(dx, 'Line dx argument must be a length: %r' % (dx,))
+        dy = geom.Length.cast(dy, 'Line dy argument must be a length: %r' % (dy,))
+        return self._add('l', float(dx), float(dy))
+
+    def arc(self, center, radius, start_deg=0, stop_deg=360, ccw=True):
+        #arc
+        center = geom.Point.cast(center, 'Center of arc must be a point: %r' % (center,))
+        radius = geom.Length.cast(radius, 'Radius of arc must be a length: %r' % (radius,))
+        start_deg = geom.Angle.cast(start_deg, 'Start-deg of arc must be an angle: %r' % (start_deg,))
+        stop_deg = geom.Angle.cast(stop_deg, 'Stop-deg of arc must be an angle: %r' % (stop_deg,))
+        return self._add('a', center.x, center.y, float(radius), float(start_deg), float(stop_deg), bool(ccw))
+
+    #def curveTo(self, end, cp1, cp2):
+    #    #curveto
+    #
+    #def curve(self, edx, edy, cp1dx, cp1dy, cp2dx, cp2dy):
+    #    #rcurveto
+
 
 class Shape(object):
     """
@@ -103,6 +191,12 @@ class Shape(object):
     def render(self, capabilities=[]):
         raise NotImplementedError()
         
+
+class PaintableShape(Shape, Paintable):
+    def __init__(self, title=None, **kwargs):
+        Shape.__init__(self, title)
+        kwargs.setdefault('stroke', (0, 0, 0))
+        Paintable.__init__(self, **kwargs)
 
 
 class BoundingBox(object):
@@ -266,11 +360,9 @@ class BoundingBox(object):
             return max(c1[0], c2[0]), max(c1[1], c2[1])
 
 
-class Circle(Shape):
+class Circle(PaintableShape):
 
     def __init__(self, center, radius, **kwargs):
-        super(Circle, self).__init__(**kwargs)
-
         try:
             center = geom.Point.cast(center)
         except TypeError:
@@ -283,6 +375,8 @@ class Circle(Shape):
 
         self._center = center
         self._radius = float(radius)
+
+        super(Circle, self).__init__(**kwargs)
 
     @property
     def center(self):
@@ -314,6 +408,5 @@ class Circle(Shape):
         return BoundingBox(lowerleft, upperright)
 
     def render(self, capabilities=[]):
-        x, y = self._center.coords()
-        return [("circle", x, y, self._radius),]
+        return [Path(paint=self).arc(self._center, self._radius)]
 

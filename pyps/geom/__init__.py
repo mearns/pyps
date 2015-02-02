@@ -3,6 +3,10 @@
 
 import abc
 import collections
+import math
+
+RADS_PER_DEG = math.pi / 180.0
+
 
 class Point(object):
     """
@@ -12,7 +16,7 @@ class Point(object):
     __metaclass__ = abc.ABCMeta
 
     @staticmethod
-    def cast(other):
+    def cast(other, error_message=None):
         if isinstance(other, Point):
             return other
         elif isinstance(other, collections.Sequence):
@@ -22,7 +26,7 @@ class Point(object):
             if other == 0:
                 return Pt(0, 0)
 
-        raise TypeError('Could not cast to a Point: %r' % (other,))
+        raise TypeError(error_message or ('Could not cast to a Point: %r' % (other,)))
             
 
     @abc.abstractmethod
@@ -92,20 +96,12 @@ class Pt(Point):
         return self.__y
 
 
-class Length(object):
+class Float(object):
     """
-    Represents a length.
+    Represents a floating value.
     """
 
     __metaclass__ = abc.ABCMeta
-
-    @staticmethod
-    def cast(self, other):
-        if isinstance(other, Length):
-            return other
-        elif isinstance(other, (float, int, long)):
-            return FixedLength(other)
-        raise TypeError('Could not cast to a Length: %r' % (other,))
 
     @abc.abstractmethod
     def __float__(self):
@@ -113,13 +109,55 @@ class Length(object):
 
     def __str__(self):
         return "%s" % (float(self),)
-        
-class FixedLength(Length):
-    def __init__(self, length):
-        self.__length = float(length)
+
+
+class FixedFloatMixin(Float):
+    def __init__(self, value):
+        self._float_value = float(value)
 
     def __float__(self):
-        return self.__length
+        return self._float_value
+
+class Length(Float):
+    """
+    Represents a length.
+    """
+    @staticmethod
+    def cast(other, error_message=None):
+        if isinstance(other, Length):
+            return other
+        elif isinstance(other, (float, int, long)):
+            return FixedLength(other)
+        raise TypeError(error_message or ('Could not cast to a Length: %r' % (other,)))
+
+
+class FixedLength(FixedFloatMixin, Length):
+    def __init__(self, length):
+        FixedFloatMixin.__init__(self, length)
+
+
+class Angle(Float):
+    """
+    Represents an angle in degrees.
+    """
+    @staticmethod
+    def cast(other, error_message=None):
+        if isinstance(other, Angle):
+            return other
+        elif isinstance(other, (float, int, long)):
+            return FixedAngle(other)
+        raise TypeError(error_message or ('Could not cast to a Angle: %r' % (other,)))
+
+    def radians(self):
+        """
+        Returns a ``float`` representing the current value of the angle, in radians.
+        """
+        return float(self) * RADS_PER_DEG
+
+
+class FixedAngle(FixedFloatMixin, Angle):
+    def __init__(self, angles):
+        FixedFloatMixin.__init__(self, angles)
 
 
 class Translation(Point):
