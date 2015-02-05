@@ -11,6 +11,11 @@ import version as proj_version
 import pyps.version as proj_version
 
 
+requires = [
+    'docit',
+    'colour',
+]
+
 setup(
     name='pyps',
     author='Brian Mearns',
@@ -32,21 +37,16 @@ setup(
 
     #Other pypi packages that are dependencies for this package.
     # To specify a particular version, do like 'package (>=1.2.3)'
-    requires = [
-        'docit',
-        'colour',
-    ],
+    requires = requires,
 
     #pypi packages that aren't necessarily required by the package, but are
     # required for certain setup.py commands. These will not be installed, but will
     # be downloaded into the local directory when setup.py is runn.
-    setup_requires = [
+    setup_requires = requires + [
         'nose>=1.0',
         'sphinx>=0.5',
         'sphinx_rtd_theme',
         'nosetp',
-
-        'docit',
     ],
 
     entry_points = {
@@ -59,7 +59,11 @@ setup(
     #Less desirable than the nosetests command, but allows you to use the
     # standard `tests` command to run nosetests.
     test_suite = 'nose.collector',
-    tests_require = ['nose>=1.0', 'pychangelog>=1.1'],
+    tests_require = requires + [
+        'nose>=1.0',
+        'pychangelog>=1.1',
+        'pillow>=2.2.1'
+    ],
 
     classifiers = [
         #'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
