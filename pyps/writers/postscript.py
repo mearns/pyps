@@ -12,7 +12,7 @@ class EPSWriter(Writer):
     """
 
     def render_color(self, color):
-        return ' '.join(str(float(c)/255.0) for c in color)
+        return ' '.join(str(c) for c in color.rgbf())
 
     def render_path(self, path):
         if not isinstance(path, Path):

@@ -10,6 +10,7 @@ import math
 import abc
 
 from pyps import geom
+from pyps.art.color import Color
 
 
 TAU = 2.0 * math.pi
@@ -17,8 +18,8 @@ TAU = 2.0 * math.pi
 
 class Paintable(object):
     def __init__(self, stroke=None, fill=None, stroke_width=1.0):
-        self._stroke = stroke
-        self._fill = fill
+        self._stroke = Color.cast_or_none(stroke, 'Paintable stroke must be a color or None: %r' % (stroke,))
+        self._fill = Color.cast_or_none(fill, 'Paintable fill must be a color or None: %r' % (fill,))
         self._stroke_width = geom.Length.cast(stroke_width, 'Stroke-width must be a length: %r' % (stroke_width,))
 
     @property

@@ -34,6 +34,7 @@ setup(
     # To specify a particular version, do like 'package (>=1.2.3)'
     requires = [
         'docit',
+        'colour',
     ],
 
     #pypi packages that aren't necessarily required by the package, but are
