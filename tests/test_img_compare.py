@@ -52,6 +52,7 @@ def _visit_pixels(im, func):
         for y in hrange:
             pix[x,y] = func(x, y, pix[x,y])
 
+
 def test_identical_images():
     im1 = _load_test_image()
     im2 = im1.copy()
@@ -67,9 +68,6 @@ def test_rotated_images():
 def test_images_with_noise_01pct():
     _test_noisy_compare(0.01, True)
 
-def test_images_with_noise_05pct():
-    _test_noisy_compare(0.05, False)
-
 def test_images_with_noise_15pct():
     _test_noisy_compare(0.15, False)
 
@@ -78,3 +76,88 @@ def test_images_with_noise_25pct():
 
 def test_images_with_noise_50pct():
     _test_noisy_compare(0.50, False)
+
+def test_small_offset_h():
+    im1 = _load_test_image()
+    im2 = im1.copy()
+
+    pix = im2.load()
+    size = im2.size
+    wrange = range(size[0]-1)
+    hrange = range(size[1])
+    for x in wrange:
+        for y in hrange:
+            pix[x,y] = pix[x+1,y]
+
+    ok_(img_compare.similar(im1, im2), "Images are not similar.")
+
+def test_large_offset_h():
+    im1 = _load_test_image()
+    im2 = im1.copy()
+
+    pix = im2.load()
+    size = im2.size
+    wrange = range(size[0]-5)
+    hrange = range(size[1])
+    for x in wrange:
+        for y in hrange:
+            pix[x,y] = pix[x+5,y]
+
+    ok_(not img_compare.similar(im1, im2), "Images are similar.")
+
+def test_small_offset_v():
+    im1 = _load_test_image()
+    im2 = im1.copy()
+
+    pix = im2.load()
+    size = im2.size
+    wrange = range(size[0])
+    hrange = range(size[1]-1)
+    for x in wrange:
+        for y in hrange:
+            pix[x,y] = pix[x,y+1]
+
+    ok_(img_compare.similar(im1, im2), "Images are not similar.")
+
+def test_large_offset_v():
+    im1 = _load_test_image()
+    im2 = im1.copy()
+
+    pix = im2.load()
+    size = im2.size
+    wrange = range(size[0])
+    hrange = range(size[1]-5)
+    for x in wrange:
+        for y in hrange:
+            pix[x,y] = pix[x,y+5]
+
+    ok_(not img_compare.similar(im1, im2), "Images are similar.")
+
+def test_small_offset_hv():
+    im1 = _load_test_image()
+    im2 = im1.copy()
+
+    pix = im2.load()
+    size = im2.size
+    wrange = range(size[0]-1)
+    hrange = range(size[1]-1)
+    for x in wrange:
+        for y in hrange:
+            pix[x,y] = pix[x+1,y+1]
+
+    ok_(img_compare.similar(im1, im2), "Images are not similar.")
+
+def test_large_offset_hv():
+    im1 = _load_test_image()
+    im2 = im1.copy()
+
+    pix = im2.load()
+    size = im2.size
+    wrange = range(size[0]-3)
+    hrange = range(size[1]-3)
+    for x in wrange:
+        for y in hrange:
+            pix[x,y] = pix[x+3,y+3]
+
+    ok_(not img_compare.similar(im1, im2), "Images are similar.")
+
