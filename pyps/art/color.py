@@ -3,6 +3,7 @@
 
 import abc
 import collections
+import colour
 
 class Color(object):
 
@@ -10,6 +11,22 @@ class Color(object):
 
     @staticmethod
     def cast(other, error_message=None):
+        """
+        Attempts to cast the given object to an instance of `Color`.
+
+        If ``other`` is already a `Color`, then it is returned.
+
+        Otherwise, if ``other`` is a sequence of three or four numbers, they
+        are passed as positional arguments to `FixedColor`, and the created
+        instance is returned.
+
+        :param other:   The object to cast to a `Color`.
+
+        :param error_message:   Optional, if given, this is used as the error message
+            if a |TypeError| is generated.
+
+        :raises TypeError:  If ``other`` is not castable to a `Color`.
+        """
 
         if isinstance(other, Color):
             return other
@@ -18,6 +35,13 @@ class Color(object):
                 return FixedColor(*other)
         
         raise TypeError(error_message or ('Could not cast to Color: %r' % (other,)))
+
+    @staticmethod
+    def Fixed(*args, **kwargs):
+        """
+        Generates an instance of `FixedColor` using the same parameters as `colour.Color`.
+        """
+        return FixedColor(*(colour.Color(*args, **kwargs).rgb))
 
     @staticmethod
     def cast_or_none(other, error_message=None):
@@ -35,7 +59,9 @@ class Color(object):
         """
         raise NotImplementedError()
 
+
 class FixedColor(Color):
+
 
     def __init__(self, r, g, b, divisor=1.0):
         divisor = float(divisor)

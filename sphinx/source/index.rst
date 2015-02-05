@@ -7,3 +7,6 @@ Python Package Documentation
 
     brainstorm
     code_pyps
+
+    README
+    LICENSE
