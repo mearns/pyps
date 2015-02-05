@@ -64,7 +64,7 @@ class Point(object):
         return "%s%s" % (type(self).__name__, self.__str__())
 
     def translate(self, dx=0, dy=0):
-        return Translation(self, dx, dy)
+        return Translated(self, dx, dy)
 
     def pin(self):
         """
@@ -160,7 +160,7 @@ class FixedAngle(FixedFloatMixin, Angle):
         FixedFloatMixin.__init__(self, angles)
 
 
-class Translation(Point):
+class Translated(Point):
     """
     A derived point which is a fixed translation from another Point.
     """
