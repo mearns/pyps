@@ -161,3 +161,16 @@ def test_large_offset_hv():
 
     ok_(not img_compare.similar(im1, im2), "Images are similar.")
 
+def test_blurred_images():
+    im1 = _load_test_image()
+    im2 = im1.filter(ImageFilter.GaussianBlur(5))
+
+    ok_(img_compare.similar(im1, im2), "Images are not similar.")
+
+def test_heavily_blurred_images():
+    im1 = _load_test_image()
+    im2 = im1.filter(ImageFilter.GaussianBlur(50))
+
+    ok_(not img_compare.similar(im1, im2), "Images are similar.")
+
+
