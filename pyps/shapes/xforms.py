@@ -1,55 +1,40 @@
 #! /usr/bin/env python
 # vim: set fileencoding=utf-8: set encoding=utf-8:
 
-from .. import Shape
+from .. import Shape, BoundingBox
 
-class Circle(Shape):
+from pyps import geom
 
-    def __init__(self, center, radius, **kwargs):
-        try:
-            center = geom.Point.cast(center)
-        except TypeError:
-            raise TypeError('Center point must be a point: %r' % (center,))
+class Translate(Shape):
 
-        if not isinstance(radius, (float, int, long)):
-            raise TypeError('Radius must be numeric: %r' % (radius,))
-        if radius <= 0:
-            raise TypeError('Radius must be greater than zero: %r' % (radius,))
+    def __init__(self, dx, dy, shape):
+        self._dx = geom.Length.cast(dx, "Translation dx must be a length.")
+        self._dy = geom.Length.cast(dy, "Translation dy must be a length.")
 
-        self._center = center
-        self._radius = float(radius)
+        if not isinstance(shape, Shape):
+            raise TypeError('Translation can only be applied to a Shape: %r' % (shape,))
+        self._shape = shape
 
-        super(Circle, self).__init__(**kwargs)
+        super(Translate, self).__init__()
 
-    @property
-    def center(self):
-        return self._center
+    def to_local(self, x, y):
+        return (x - self.dx, y - self.dy)
 
-    @property
-    def radius(self):
-        return self._radius
-
-    @property
-    def diameter(self):
-        return self._radius * 2.0
-
-    @property
-    def circumference(self):
-        return self._radius * TAU
-
-    def getArea(self):
-        return math.pi * (self._radius * self._radius)
+    def to_global(self, pt):
+        return geom.Point.cast(pt).translate(self._dx, self._dy)
 
     def hittest(self, x, y):
-        dx = self._center.x - x
-        dy = self._center.y - y
-        return dx*dx + dy*dy <= self._radius * self._radius
+        return self._shape.hittest(*(self.to_local(x,y)))
 
     def boundingbox(self):
-        lowerleft = self._center.translate(-(self._radius), -(self._radius))
-        upperright = self._center.translate(self._radius, self._radius)
+        #FIXME XXX: Need to dynamically translate, because as the wrapped shape changes, lowerleft Point object may not stay the same.
         return BoundingBox(lowerleft, upperright)
 
+    def boundingpoly(self, complexity=0.5):
+        #TODO: Implement
+        pass
+
     def render(self, capabilities=[]):
-        return [Path(paint=self).arc(self._center, self._radius)]
+        #TODO: Implement
+        pass
 
