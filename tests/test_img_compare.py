@@ -68,7 +68,7 @@ def test_images_with_noise_01pct():
     _test_noisy_compare(0.01, True)
 
 def test_images_with_noise_05pct():
-    _test_noisy_compare(0.05, True)
+    _test_noisy_compare(0.05, False)
 
 def test_images_with_noise_15pct():
     _test_noisy_compare(0.15, False)

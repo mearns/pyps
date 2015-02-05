@@ -29,6 +29,6 @@ def similar(im1, im2):
                 energy += sum(deltas)
 
     avg_energy = float(energy) / float(3*size[0]*size[1])
-    return avg_energy < 10
+    return avg_energy < 3
 
 
