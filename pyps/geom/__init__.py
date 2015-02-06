@@ -30,7 +30,7 @@ class Point(object):
             
 
     @abc.abstractmethod
-    def coords(self):
+    def get_coords(self):
         """
         Returns a two-tuple of floats, giving the X and Y coordinates of the
         point, respectively.
@@ -42,22 +42,20 @@ class Point(object):
 
     def __getitem__(self, idx):
         try:
-            return self.coords()[idx]
+            return self.get_coords()[idx]
         except IndexError, e:
             if idx >= 2:
                 raise IndexError("Points have exactly two elements.")
             raise
 
-    @property
-    def x(self):
-        return self.coords()[0]
+    def get_x(self):
+        return self.get_coords()[0]
 
-    @property
-    def y(self):
-        return self.coords()[1]
+    def get_y(self):
+        return self.get_coords()[1]
 
     def __str__(self):
-        coords = self.coords()
+        coords = self.get_coords()
         return "(%s,%s)" % (coords[0], coords[1])
 
     def __repr__(self):
@@ -71,7 +69,7 @@ class Point(object):
         Creates and returns an instance of `Pt` at the current location of this
         point.
         """
-        return Pt(*(self.coords()))
+        return Pt(*(self.get_coords()))
 
 
 class Pt(Point):
@@ -80,19 +78,17 @@ class Pt(Point):
     """
 
     def __init__(self, x, y):
-        self.__x = x
-        self.__y = y
-        self.__coords = (x, y)
+        self.__x = float(x)
+        self.__y = float(y)
+        self.__coords = (self.__x, self.__y)
 
-    def coords(self):
+    def get_coords(self):
         return self.__coords
 
-    @property
-    def x(self):
+    def get_x(self):
         return self.__x
 
-    @property
-    def y(self):
+    def get_y(self):
         return self.__y
 
 
@@ -127,7 +123,9 @@ class Length(Float):
         if isinstance(other, Length):
             return other
         elif isinstance(other, (float, int, long)):
-            return FixedLength(other)
+            if other < 0:
+                raise TypeError(error_message or ('Length must be non-negative: %r' % (other,)))
+            return FixedLength(float(other))
         raise TypeError(error_message or ('Could not cast to a Length: %r' % (other,)))
 
 
@@ -169,7 +167,7 @@ class Translated(Point):
         self.__dx = float(dx)
         self.__dy = float(dy)
 
-    def coords(self):
-        ox, oy = self.__origin.coords()
+    def get_coords(self):
+        ox, oy = self.__origin.get_coords()
         return (ox + self.__dx, oy + self.__dy)
 

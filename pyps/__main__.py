@@ -19,8 +19,8 @@ if __name__ == '__main__':
         title="My Circle",
         fill=Color.Fixed(red=0.2, green=0.5, blue=1.0),
         stroke=Color.Fixed('#66ff99'),
-        stroke_width=5)
-    )
+        stroke_width=5
+    ))
     doc.add_shape(Circle((150, 100), 30, title="My Circle", stroke=(255, 0, 0, 255), stroke_width=3))
 
     writer = EPSWriter()

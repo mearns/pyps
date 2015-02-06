@@ -15,6 +15,7 @@ distribute-*.egg
 distribute-*.tar.gz
 *.egg-info
 *.egg
+.eggs/
 setuptools-*.zip
 setuptools-*.tar.gz
 

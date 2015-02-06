@@ -70,12 +70,15 @@ class Path(Paintable):
     def moveTo(self, pt):
         #moveto
         pt = geom.Point.cast(pt, 'Move-to argument must be a point: %r' % (pt,))
-        return self._add('M', pt.x, pt.y)
+        return self._add('M', pt.get_x(), pt.get_y())
+
+    def close(self):
+        return self._add('X')
         
     def lineTo(self, pt):
         #lineto
         pt = geom.Point.cast(pt, 'Line-to argument must be a point: %r' % (pt,))
-        return self._add('L', pt.x, pt.y)
+        return self._add('L', pt.get_x(), pt.get_y())
 
     def move(self, dx, dy):
         #rmoveto
@@ -96,7 +99,10 @@ class Path(Paintable):
         radius = geom.Length.cast(radius, 'Radius of arc must be a length: %r' % (radius,))
         start_deg = geom.Angle.cast(start_deg, 'Start-deg of arc must be an angle: %r' % (start_deg,))
         stop_deg = geom.Angle.cast(stop_deg, 'Stop-deg of arc must be an angle: %r' % (stop_deg,))
-        return self._add('a', center.x, center.y, float(radius), float(start_deg), float(stop_deg), bool(ccw))
+        return self._add('A', center.get_x(), center.get_y(), float(radius), float(start_deg), float(stop_deg), bool(ccw))
+
+    def circle(self, center, radius):
+        return self._add('C', center.get_x(), center.get_y(), float(radius))
 
     #def curveTo(self, end, cp1, cp2):
     #    #curveto
@@ -109,6 +115,13 @@ class Shape(object):
     """
     This is the base class for all shapes. It defines the interface for shapes
     and provides some helper functions for those shapes.
+
+    The key abstract interface is:
+    * <hittest>
+    * <boundingbox>
+    * <render>
+
+    It is also a good idea to implement <boundingpoly>
     """
 
     __metaclass__ = abc.ABCMeta
@@ -144,19 +157,19 @@ class Shape(object):
         """
         raise NotImplementedError()
 
-    @abc.abstractmethod
+    @abc.abstractproperty
     def boundingbox(self):
         """
-        Returns a `BoundingBox` which completely contains this shape. Ideally,
+        Returns a `Box` which completely contains this shape. Ideally,
         this should be a minimum bounding box, i.e., the smallest possible
         box that contains the entire shape. But this is not strictly necessary
         if you have a hard time computing that.
 
-        :rtype: `BoundingBox`
+        :rtype: `Box`
         """
         raise NotImplementedError()
 
-    def boundingpoly(self, complexity=0.5):
+    def get_boundingpoly(self, complexity=0.5):
         """
         Returns a polygon which entirely contains this shape. This is a
         generalization of the `boundingbox` method and it is acceptable to
@@ -185,7 +198,7 @@ class Shape(object):
 
         :rtype: `Polygon`.
         """
-        #FIXME XXX: BoundingBox will need to extend some kind of Polygon class.
+        #FIXME XXX: Box will need to extend some kind of Polygon class.
         return self.boundingbox()
 
     @abc.abstractmethod
@@ -199,215 +212,203 @@ class PaintableShape(Shape, Paintable):
         kwargs.setdefault('stroke', (0, 0, 0))
         Paintable.__init__(self, **kwargs)
 
-
-class BoundingBox(object):
+class Box(Shape):
     """
-    A `BoundingBox` is a rectangle which is orthogonal to the X and Y axes.
-    It is typically used to represent the minimum bounding box around a shape,
-    and is returned by `Shape.boundingbox`.
-
-    A `BoundingBox` instance is defined by two opposite corners of the box.
-    Either pair of opposite corners, in either order, can be used. These points
-    can be dynamic points; all methods of the bounding box work dynamically
-    based on the current positions of the given points.
+    A `Box` is a rectangular `Shape` which is orthogonal to the X and Y axes.
+    This is an abstract interface class, subclasses should implement
+    the <get_bounds> function.
     """
 
-    #FIXME XXX: Make this a `Shape`.
+    def __init__(self):
+        self._lowerleft = self._LowerLeftCorner(self)
+        self._lowerright = self._LowerRightCorner(self)
+        self._upperleft = self._UpperLeftCorner(self)
+        self._upperright = self._UpperRightCorner(self)
+        super(Box, self).__init__()
 
-    def __init__(self, pt1, pt2):
-        pt1 = geom.Point.cast(pt1)
-        pt2 = geom.Point.cast(pt2)
-        self._lowerleft = self._LowerLeft(pt1, pt2)
-        self._lowerright = self._LowerRight(pt1, pt2)
-        self._upperleft = self._UpperLeft(pt1, pt2)
-        self._upperright = self._UpperRight(pt1, pt2)
-
-    def width(self):
-        """
-        Returns the width of the bounding box.
-        """
-        return self._lowerright.x - self._lowerleft.x
-
-    def height(self):
-        """
-        Returns the height of the bounding box.
-        """
-        return self._upperleft.y - self._lowerleft.y
-
-    def area(self):
-        return self.width()*self.height()
+    def render(self, capabilities=[]):
+        return [
+            Path.moveTo(self.lowerleft),
+            Path.lineTo(self.upperleft),
+            Path.lineTo(self.upperright),
+            Path.lineTo(self.lowerright),
+            Path.close(),
+        ]
 
     @property
     def lowerleft(self):
         """
-        Returns a dynamic point representing the lower left corner of the box,
-        which is the point with the minimum X and minimum Y coordinates.
-
-        :rtype: `~geom.Point`
+        Returns a dynamic point which represents the lower left corner of the box
+        (minimum X and minimum Y).
         """
         return self._lowerleft
 
     @property
     def lowerright(self):
         """
-        Returns a dynamic point representing the lower right corner of the box,
-        which is the point with the maximum X and minimum Y coordinates.
-
-        :rtype: `~geom.Point`
+        Returns a dynamic point which represents the lower right corner of the box
+        (maximum X and minimum Y).
         """
         return self._lowerright
 
     @property
     def upperleft(self):
         """
-        Returns a dynamic point representing the upper left corner of the box,
-        which is the point with the minimum X and maximum Y coordinates.
-
-        :rtype: `~geom.Point`
+        Returns a dynamic point which represents the upper left corner of the box
+        (minimum X and maximum Y).
         """
         return self._upperleft
 
     @property
     def upperright(self):
         """
-        Returns a dynamic point representing the upper right corner of the box,
-        which is the point with the maximum X and maximum Y coordinates.
-
-        :rtype: `~geom.Point`
+        Returns a dynamic point which represents the upper right corner of the box
+        (maximum X and maximum Y).
         """
         return self._upperright
 
-    ### We could easily have done a common base class for all of these, and made
-    # each specific implementation very small and simple, but they are already
-    # such trivial implementations that the only reason to do that would be to
-    # save key strokes. So why not put in the effort once at coding time and
-    # improve performance a bit.
-
-    class _LowerLeft(geom.Point):
+    @abc.abstractmethod
+    def get_bounds(self):
         """
-        Simple dynamic point that represents the lower left point of the box
-        defined by two opposite points, ``pt1`` and ``pt2``.
-
-        The lower left has minimum X coordinate and minimum Y coordinate of
-        the given points.
+        Return a four tuple of numbers representing the limiting coordinate values
+        of the box, as :samp:`({north}, {east}, {south}, {west})`, where
+        :samp:`{north}` is the upper (maximum) Y coordinate, 
+        :samp:`{east}` is the right-most (maximum) X coordinate, 
+        :samp:`{south}` is the lower (maximum) Y coordinate, and
+        :samp:`{west}` is the left-most (minimum) X coordinate, 
         """
-        def __init__(self, pt1, pt2):
-            """
-            :param pt1: One of two opposite points that define the box.
-            :type pt1: Anything castable by `~geom.Point`.
+        raise NotImplementedError()
 
-            :param pt2: The other of the two opposite points that define the box.
-            :type pt2: Anything castable by `~geom.Point`.
-
-            """
-            self._pt1 = pt1
-            self._pt2 = pt2
-
-        def coords(self):
-            """
-            Implements `geom.Point.coords <geom.Point.coords>` by dynamically choosing
-            the correct limiting coordinates of the box.
-            """
-            c1 = self._pt1.coords()
-            c2 = self._pt2.coords()
-            return min(c1[0], c2[0]), min(c1[1], c2[1])
-
-    class _UpperLeft(geom.Point):
+    def get_width(self):
         """
-        Like `_LowerLeft`, but representing the *upper* left point of the box.
-
-        The upper left has minimum X coordinate and maximum Y coordinate of
-        the given points.
+        Returns the width of the box, the extent of the X coordinates.
         """
-        def __init__(self, pt1, pt2):
-            self._pt1 = pt1
-            self._pt2 = pt2
+        n, e, s, w = self.get_bounds()
+        return e - w
 
-        def coords(self):
-            c1 = self._pt1.coords()
-            c2 = self._pt2.coords()
-            return min(c1[0], c2[0]), max(c1[1], c2[1])
-
-    class _LowerRight(geom.Point):
+    def get_height(self):
         """
-        Like `_LowerLeft`, but representing the lower *right* point of the box.
-
-        The lower right has maximum X coordinate and minimum Y coordinate of
-        the given points.
+        Returns the height of the box, the extent of the Y coordinates.
         """
-        def __init__(self, pt1, pt2):
-            self._pt1 = pt1
-            self._pt2 = pt2
+        n, e, s, w = self.get_bounds()
+        return n - s
 
-        def coords(self):
-            c1 = self._pt1.coords()
-            c2 = self._pt2.coords()
-            return max(c1[0], c2[0]), min(c1[1], c2[1])
-
-    class _UpperRight(geom.Point):
+    def get_area(self):
         """
-        Like `_LowerLeft`, but representing the *upper* *right* point of the box.
-
-        The upper right has maximum X coordinate and maximum Y coordinate of
-        the given points.
+        Returns the current area of the box, the product of the `width <get_width>`
+        and the `height <get_height>`.
         """
-        def __init__(self, pt1, pt2):
-            self._pt1 = pt1
-            self._pt2 = pt2
+        return self.get_width() * self.get_height()
 
-        def coords(self):
-            c1 = self._pt1.coords()
-            c2 = self._pt2.coords()
-            return max(c1[0], c2[0]), max(c1[1], c2[1])
+    def hittest(self, x, y):
+        n, e, s, w = self.get_bounds()
+        return (w <= x <= e) and (s <= y <= n)
+
+    @property
+    def boundingbox(self):
+        return self
+
+    def get_boundingpoly(self, quality=0.5):
+        return self
+
+    class _Corner(geom.Point):
+        def __init__(self, box):
+            self._box = box
+
+        def get_coords(self):
+            return (self.get_x(), self.get_y())
+
+        @abc.abstractmethod
+        def get_x(self):
+            raise NotImplementedError()
+
+        @abc.abstractmethod
+        def get_y(self):
+            raise NotImplementedError()
+
+    class _LeftCorner(object):
+        def get_x(self):
+            return self._box.get_bounds()[3]
+
+    class _RightCorner(object):
+        def get_x(self):
+            return self._box.get_bounds()[1]
+
+    class _UpperCorner(object):
+        def get_y(self):
+            return self._box.get_bounds()[0]
+
+    class _LowerCorner(object):
+        def get_y(self):
+            return self._box.get_bounds()[2]
+
+    class _LowerLeftCorner(_Corner, _LeftCorner, _LowerCorner): pass
+    class _LowerRightCorner(_Corner, _RightCorner, _LowerCorner): pass
+    class _UpperLeftCorner(_Corner, _LeftCorner, _UpperCorner): pass
+    class _UpperRightCorner(_Corner, _RightCorner, _UpperCorner): pass
+
 
 
 class Circle(PaintableShape):
 
     def __init__(self, center, radius, **kwargs):
-        try:
-            center = geom.Point.cast(center)
-        except TypeError:
-            raise TypeError('Center point must be a point: %r' % (center,))
-
-        if not isinstance(radius, (float, int, long)):
-            raise TypeError('Radius must be numeric: %r' % (radius,))
-        if radius <= 0:
-            raise TypeError('Radius must be greater than zero: %r' % (radius,))
-
-        self._center = center
-        self._radius = float(radius)
+        self._center = geom.Point.cast(center, "Center must be a point: %r" % (center,))
+        self._radius = geom.Length.cast(radius, "Radius must be a length: %r" % (length,))
+        self._bbox = self.BBox(self)
 
         super(Circle, self).__init__(**kwargs)
 
     @property
     def center(self):
+        """
+        The Point representing the center of the circle.
+        """
         return self._center
 
     @property
     def radius(self):
+        """
+        A `~pyps.geom.Length` representing the radius of the circle.
+        """
         return self._radius
 
-    @property
-    def diameter(self):
-        return self._radius * 2.0
+    def get_radius(self):
+        """
+        Returns the current radius of the circle, as a float.
+        """
+        return float(self._radius)
 
-    @property
-    def circumference(self):
-        return self._radius * TAU
+    def get_diameter(self):
+        return self.get_radius() * 2.0
 
-    def getArea(self):
-        return math.pi * (self._radius * self._radius)
+    def get_circumference(self):
+        return self.get_radius() * TAU
+
+    def get_area(self):
+        r = self.get_radius()
+        return math.pi * r * r
 
     def hittest(self, x, y):
-        dx = self._center.x - x
-        dy = self._center.y - y
-        return dx*dx + dy*dy <= self._radius * self._radius
+        cx, cy = self.center.get_coords()
+        r = self.get_radius()
+        dx = cx - x
+        dy = cy - y
+        return (dx*dx + dy*dy) <= (r * r)
 
     def boundingbox(self):
-        lowerleft = self._center.translate(-(self._radius), -(self._radius))
-        upperright = self._center.translate(self._radius, self._radius)
-        return BoundingBox(lowerleft, upperright)
+        return self._bbox
+
+    #TODO: get_boundingpoly.
 
     def render(self, capabilities=[]):
-        return [Path(paint=self).arc(self._center, self._radius)]
+        return [Path(paint=self).circle(self._center, self._radius)]
+
+    class BBox(Box):
+        def __init__(self, circle):
+            self._circle = circle
+
+        def get_bounds(self):
+            r = self._circle.get_radius()
+            x, y = self._circle.center.get_coords()
+            return (y+r, x+r, y-r, x-r)
 

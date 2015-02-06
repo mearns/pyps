@@ -41,10 +41,15 @@ class EPSWriter(Writer):
                 return '%f %f lineto' % comp[1:]
             elif command == 'l':
                 return '%f %f rlineto' % comp[1:]
-            elif command == 'a':
+            elif command == 'A':
                 cx, cy, r, b, e, ccw = comp[1:]
                 op = 'arc' if ccw else 'arcn'
                 return '%s %s %s %s %s %s' % (cx, cy, r, b, e, op)
+            elif command == 'C':
+                cx, cy, r = comp[1:]
+                return '%s %s %s 0 360 arc'
+            elif command == 'X':
+                return 'closepath'
             else:
                 raise ValueError('Unknown path component command: %r' % (command,))
                 
