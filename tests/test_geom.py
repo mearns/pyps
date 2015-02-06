@@ -125,4 +125,9 @@ def test_dilated():
     eq_(uut.get_x(), -12)
     eq_(uut.get_y(), -18)
 
+def test_distance():
+
+    eq_(geom.Point.cast((5,5)).distance().get_float(), math.sqrt(50))
+    eq_(geom.Point.cast((5,5)).distance((1, 2)).get_float(), math.sqrt(4*4 + 3*3))
+
 

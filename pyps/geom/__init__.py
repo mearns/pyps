@@ -422,6 +422,33 @@ class MeanLength(MeanMixin, NaryLength):
     pass
         
 
+class PointPointDistance(Length):
+    """
+    A dynamic `Length` representing the distance between two points.
+    """
+    def __init__(self, pt1, pt2=0):
+        """
+        :param pt1: The first point. This must be castable with `Point.cast`.
+        :param pt2: Optional, the second point. This must be castable with `Point.cast`.
+            The default is 0, which acts as the origin (0,0).
+        """
+        self._pt1 = Point.cast(pt1)
+        self._pt2 = Point.cast(pt2)
+
+    def get_float(self):
+        x1, y1 = self._pt1.get_coords()
+        x2, y2 = self._pt2.get_coords()
+        dx = x2 - x1
+        dy = y2 - y1
+        return math.sqrt(dx*dx + dy*dy)
+
+    def __str__(self):
+        return "|%s -- %s|" % (self._pt1, self._pt2)
+
+    def __repr__(self):
+        return "%s(%r, %r)" % (type(self).__name__, self._pt1, self._pt2)
+
+
 class Point(object):
     """
     Abstract class provides the interface for all points.
@@ -547,6 +574,13 @@ class Point(object):
     @docit
     def __repr__(self):
         return '%s(%r, %r)' % (type(self).__name__, self.x, self.y)
+
+    def distance(self, to=0):
+        """
+        Returns a dynamic `PointPointDistance` object representing the distance between
+        this point and the given point, which defaults to the origin at (0,0) if not given.
+        """
+        return PointPointDistance(self, to)
 
     def fix(self):
         """
