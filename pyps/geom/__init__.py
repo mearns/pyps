@@ -327,7 +327,7 @@ class NaryFloat(Float):
         all_others = [other]
         all_others.extend(others)
 
-        self.__others = (Float.cast(other) for other in all_others)
+        self.__others = tuple(Float.cast(other) for other in all_others)
         
     @abc.abstractmethod
     def combine(self, other, *others):
@@ -514,7 +514,7 @@ class Point(object):
 
         .. seealso:: `get_x`, `get_y`
         """
-        raise NotImplementedError()
+        return (self.get_x(), self.get_y())
 
     @docit
     def __len__(self):
@@ -561,6 +561,9 @@ class Point(object):
         """
         return Translated(self, dx, dy)
 
+    def dilate(self, scale, origin=0):
+        return Dilated(self, scale, origin)
+
 
 class FixedPoint(Point):
     """
@@ -587,10 +590,10 @@ class Translated(Point):
     """
     A derived point which is a fixed translation from another Point.
     """
-    def __init__(self, origin, dx=0, dy=0):
-        self._origin = Point.cast(origin)
-        self._x = Sum(self._origin.x, dx)
-        self._y = Sum(self._origin.y, dy)
+    def __init__(self, pt, dx=0, dy=0):
+        self._pt = Point.cast(pt)
+        self._x = Sum(self._pt.x, dx)
+        self._y = Sum(self._pt.y, dy)
 
     @property
     def x(self):
@@ -602,9 +605,31 @@ class Translated(Point):
 
     @docit
     def __str__(self):
-        return '(%s + (%s,%s))' % (self._origin, self._x, self._y)
+        return '(%s + (%s,%s))' % (self._pt, self._x, self._y)
 
     @docit
     def __repr__(self):
-        return '%s(%r, %r, %r)' % (self._origin, self._x, self._y)
+        return '%s(%r, %r, %r)' % (self._pt, self._x, self._y)
+
+class Dilated(Point):
+    def __init__(self, pt, scale, origin=0):
+        origin = Point.cast(origin)
+        scale = Float.cast(scale)
+        u_x = Difference(pt.x, origin.x)
+        u_y = Difference(pt.y, origin.y)
+        vx = Product(u_x, scale)
+        vy = Product(u_y, scale)
+        self._x = Sum(origin.x, vx)
+        self._y = Sum(origin.y, vy)
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+
+        
 

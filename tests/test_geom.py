@@ -106,3 +106,23 @@ def test_translation():
     eq_(uut.get_x(), 5)
     eq_(uut.get_y(), 4)
 
+def test_dilated():
+    tpt = geom.Point.cast((4, 6))
+
+    uut = tpt.dilate(2)
+    eq_(uut.get_x(), 8)
+    eq_(uut.get_y(), 12)
+
+    uut = tpt.dilate(0.5)
+    eq_(uut.get_x(), 2)
+    eq_(uut.get_y(), 3)
+
+    uut = tpt.dilate(5, (3, 5))
+    eq_(uut.get_x(), 8)
+    eq_(uut.get_y(), 10)
+
+    uut = tpt.dilate(-3)
+    eq_(uut.get_x(), -12)
+    eq_(uut.get_y(), -18)
+
+
