@@ -261,6 +261,13 @@ class FixedLength(FixedFloat, Length):
     """
     pass
 
+class Abs(Length):
+    def __init__(self, other):
+        self.__other = Float.cast(other)
+
+    def get_float(self):
+        return abs(float(self.__other))
+
 
 class Angle(Float):
     """
@@ -285,9 +292,90 @@ class Angle(Float):
         """
         return float(self.radians)
 
-
 class FixedAngle(FixedFloat, Angle):
     pass
+
+class ReducedAngle(Angle):
+    """
+    Always resolves to an angle in the closed range [0, 360] degrees.
+    """
+    def __init__(self, other):
+        self.__other = Angle.cast(other)
+
+    def get_float(self):
+        angle = float(self.__other)
+        while angle < 0:
+            angle += 360.0
+        while angle > 360.0:
+            angle -= 360.0
+        return angle
+
+class StrictAngle(ReducedAngle):
+    """
+    Like `ReducedAngle`, but resolves to the half-closed range [0, 360). A value
+    that would resolve as 360 with `ReducedAngle` will resolve as 0 here.
+    """
+    def get_float(self):
+        angle = super(StrictAngle, self).get_float()
+        if angle == 360.0:
+            return 0.0
+        return angle
+
+class SymmetricAngle(Angle):
+    """
+    Like `ReducedAngle`, except instead of returning a value in the closed range [0, 360],
+    it alwsys resolves to a value in the closed range [-180, 180].
+    """
+    def __init__(self, other):
+        self.__other = Angle.cast(other)
+
+    def get_float(self):
+        angle = float(self.__other)
+        while angle < -180.0:
+            angle += 360.0
+        while angle > 180.0:
+            angle -= 360.0
+        return angle
+    
+class ComplementaryAngle(Angle):
+    def __init__(self, other):
+        self.__other = Angle.cast(other)
+
+    def get_float(self):
+        angle = float(self.__other)
+        while angle < 0:
+            angle += 360.0
+        while angle > 360:
+            angle -= 360
+        while angle > 90:
+            angle -= 90
+        return 90.0 - angle
+
+class SupplementaryAngle(Angle):
+    def __init__(self, other):
+        self.__other = Angle.cast(other)
+
+    def get_float(self):
+        angle = float(self.__other)
+        while angle < 0:
+            angle += 360.0
+        while angle > 360:
+            angle -= 360
+        while angle > 180:
+            angle -= 180
+        return 180.0 - angle
+
+class ReflexAngle(Angle):
+    def __init__(self, other):
+        self.__other = Angle.cast(other)
+
+    def get_float(self):
+        angle = float(self.__other)
+        while angle < 0:
+            angle += 360.0
+        while angle > 360:
+            angle -= 360
+        return 360.0 - angle
 
 
 class PairFloat(Float):
