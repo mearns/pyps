@@ -130,6 +130,13 @@ class Abs(Length):
     def get_float(self):
         return abs(float(self.__other))
 
+class Negative(Float):
+    def __init__(self, other):
+        self.__other = Float.cast(other)
+
+    def get_float(self):
+        return -(self.__other.get_float())
+
 
 class Angle(Float):
     """

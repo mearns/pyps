@@ -21,13 +21,13 @@ class EPSWriter(Writer):
         ps = ''
         ps += '\n '.join(self._render_path_component(comp) for comp in path)
 
-        fill = path.fill
-        stroke = path.stroke
+        fill = path.get_fill()
+        stroke = path.get_stroke()
 
         if fill:
             ps += '\n %s setrgbcolor gsave fill grestore' % (self.render_color(fill))
         if stroke:
-            ps += '\n %s setrgbcolor %f setlinewidth stroke' % (self.render_color(stroke), path.stroke_width)
+            ps += '\n %s setrgbcolor %f setlinewidth stroke' % (self.render_color(stroke), path.get_stroke_width())
 
         return ps
 
@@ -46,8 +46,9 @@ class EPSWriter(Writer):
                 op = 'arc' if ccw else 'arcn'
                 return '%s %s %s %s %s %s' % (cx, cy, r, b, e, op)
             elif command == 'C':
+                #Circle
                 cx, cy, r = comp[1:]
-                return '%s %s %s 0 360 arc'
+                return '%s %s %s 0 360 arc' % (cx, cy, r)
             elif command == 'X':
                 return 'closepath'
             else:

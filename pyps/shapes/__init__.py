@@ -17,21 +17,25 @@ TAU = 2.0 * math.pi
 
 
 class Paintable(object):
-    def __init__(self, stroke=None, fill=None, stroke_width=1.0):
+    """
+    Simple base / mixin class for anything that has a configurable fill and stroke.
+    """
+    def __init__(self, paint=None, stroke=None, fill=None, stroke_width=None):
+        stroke = stroke or paint.get_stroke() 
+        fill = fill or paint.get_fill()
+        stroke_width = stroke_width if stroke_width is not None else paint.get_stroke_width()
+
         self._stroke = Color.cast_or_none(stroke, 'Paintable stroke must be a color or None: %r' % (stroke,))
         self._fill = Color.cast_or_none(fill, 'Paintable fill must be a color or None: %r' % (fill,))
         self._stroke_width = geom.Length.cast(stroke_width, 'Stroke-width must be a length: %r' % (stroke_width,))
 
-    @property
-    def fill(self):
+    def get_fill(self):
         return self._fill
 
-    @property
-    def stroke(self):
+    def get_stroke(self):
         return self._stroke
 
-    @property
-    def stroke_width(self):
+    def get_stroke_width(self):
         return self._stroke_width
 
     def has_fill(self):
@@ -43,13 +47,9 @@ class Paintable(object):
 
 class Path(Paintable):
 
-    def __init__(self, paint=None, **kwargs):
+    def __init__(self, paint=None, stroke=None, fill=None, stroke_width=None):
         self._components = []
-        if paint is not None:
-            kwargs.setdefault('stroke', paint.stroke)
-            kwargs.setdefault('stroke_width', paint.stroke_width)
-            kwargs.setdefault('fill', paint.fill)
-        super(Path, self).__init__(**kwargs)
+        super(Path, self).__init__(paint, stroke, fill, stroke_width)
 
     def __str__(self):
         return '\n    '.join(' '.join(str(x) for x in comp) for comp in self._components)
@@ -111,6 +111,7 @@ class Path(Paintable):
     #    #rcurveto
 
 
+
 class Shape(object):
     """
     This is the base class for all shapes. It defines the interface for shapes
@@ -128,11 +129,17 @@ class Shape(object):
 
     def __init__(self, title=None):
         self._title = title
+        self._transforms = []
 
     def set_title(self, title):
         self._title = title
 
     def title(self):
+        """
+        A simple string that can be used as a title for the object. Depending on the writer,
+        this may end getting included when the shape is rendered, but it will *not* be
+        visible in the drawing.
+        """
         return self._title
 
     def __str__(self):
@@ -207,10 +214,11 @@ class Shape(object):
         
 
 class PaintableShape(Shape, Paintable):
-    def __init__(self, title=None, **kwargs):
+    def __init__(self, title=None, stroke=None, fill=None, stroke_width=None):
         Shape.__init__(self, title)
-        kwargs.setdefault('stroke', (0, 0, 0))
-        Paintable.__init__(self, **kwargs)
+        stroke = stroke or (0,0,0)
+        Paintable.__init__(self, stroke=stroke, fill=fill, stroke_width=stroke_width)
+
 
 class Box(Shape):
     """

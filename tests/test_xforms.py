@@ -15,7 +15,7 @@ import os
 
 import pyps
 from pyps.shapes import Circle
-from pyps.shapes.xforms import Translate
+from pyps.shapes import xforms
 
 
 def _doc_to_img(doc):
@@ -54,25 +54,22 @@ def _test_docs_similar(doc1, doc2):
 
     ok_(img_compare.similar(im1, im2))
 
-def test_translate():
-    doc1 = pyps.Document()
-    doc1.add_shape(Translate(450, -85, Circle(
-        (100, 200), 50,
-        title="My Circle",
-        fill=(0.2, 0.5, 0.7),
-        stroke=(0.4, 0.9, 0.1),
-        stroke_width=5
-    )))
+def test_translation():
+    uut = xforms.Translation(-5, 12)
 
-    doc2 = pyps.Document()
-    doc2.add_shape(Circle(
-        (550, 115), 50,
-        title="My Circle",
-        fill=(0.2, 0.5, 0.7),
-        stroke=(0.4, 0.9, 0.1),
-        stroke_width=5
-    ))
+    tpt = uut.to_global((0, 0))
+    eq_(tpt.get_x(), -5)
+    eq_(tpt.get_y(), 12)
 
-    _test_docs_similar(doc1, doc2)
+    tpt = uut.to_global((5, -12))
+    eq_(tpt.get_x(), 0)
+    eq_(tpt.get_y(), 0)
 
+    tpt = uut.to_global((3, 3))
+    eq_(tpt.get_x(), -2)
+    eq_(tpt.get_y(), 15)
+
+    tpt = uut.to_local((0, 0))
+    eq_(tpt.get_x(), 5)
+    eq_(tpt.get_y(), -12)
 
