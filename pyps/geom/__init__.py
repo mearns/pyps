@@ -10,165 +10,6 @@ import math
 RADS_PER_DEG = math.pi / 180.0
 
 
-class Point(object):
-    """
-    Abstract class provides the interface for all points.
-
-    Concrete subclasses must implement the `x` and `y` properties.
-
-    A `Point` acts like a two-tuple of it's coordinates as :samp:`({x}, {y})`,
-    by implementing the `__len__` and `__getitem__` methods.
-    """
-
-    __metaclass__ = abc.ABCMeta
-
-    @staticmethod
-    def cast(other, error_message=None):
-        """
-        Create a `Point` object from the given object if possible.
-
-        If ``other`` is already a `Point` (including an instance of any subclass of `Point`),
-        then it is simply returned.
-
-        If ``other`` is a sequence of length 2, it is assumed to hold the coordinates
-        of the point as :samp:`({x}, {y})`. In this case, it will create a fixed point,
-        an instance of the `Pt` class.
-
-        If ``other`` is a ``float``, ``int``, or ``long`` value equal to 0, then it represents
-        the *origin*, and a fixed point positioned at `(0, 0)` is returned.
-
-        Otherwise a |TypeError| is raised with the given ``error_message``, or a default error message
-        is none is provided.
-        """
-        if isinstance(other, Point):
-            return other
-        elif isinstance(other, collections.Sequence):
-            if len(other) == 2:
-                return Pt(*other)
-        elif isinstance(other, (int, float, long)):
-            if other == 0:
-                return Pt(0, 0)
-
-        raise TypeError(error_message or ('Could not cast to a Point: %r' % (other,)))
-            
-    @abc.abstractproperty
-    def x(self):
-        """
-        A dynamic `Float` value representing the X coordinate of the point.
-
-        .. seealso::
-
-            `get_x`
-                To resolve this property.
-        """
-        raise NotImplementedError()
-
-    @abc.abstractproperty
-    def y(self):
-        """
-        A dynamic `Float` value representing the Y coordinate of the point.
-
-        .. seealso::
-
-            `get_y`
-                To resolve this property.
-        """
-        raise NotImplementedError()
-
-    def get_x(self):
-        """
-        Resolves the `x` property to return the current value of the X coordinate.
-
-        .. seealso::
-            `x`
-                The corresponding dynamic property
-        """
-        return float(self.x)
-
-    def get_y(self):
-        """
-        Resolves the `y` property to return the current value of the Y coordinate.
-
-        .. seealso::
-            `y`
-                The corresponding dynamic property
-        """
-        return float(self.y)
-
-    def get_coords(self):
-        """
-        Resolves the point by returning a two-tuple of floats, giving the current 
-        X and Y coordinates of the point, respectively.
-
-        .. seealso:: `get_x`, `get_y`
-        """
-        raise NotImplementedError()
-
-    @docit
-    def __len__(self):
-        """
-        A `Point` acts like a two-tuple over it's X and Y coordinates, so its length
-        is always 2.
-        """
-        return 2;
-
-    @docit
-    def __getitem__(self, idx):
-        """
-        A `Point` acts like a two-tuple over it's `x` and `y` properties, this method
-        provides indexed-access on the object. 
-        """
-        if idx == 0:
-            return self.x
-        elif idx == 1:
-            return self.y
-        raise IndexError("Points have exactly two elements.")
-
-    def translate(self, dx=0, dy=0):
-        """
-        Returns a new `Translated` point with a fixed translational relationship
-        to this point.
-        """
-        return Translated(self, dx, dy)
-
-    def fix(self):
-        """
-        Creates and returns an instance of `Pt` at the current location of this
-        point.
-        """
-        return Pt(self.x, self.y)
-
-    @docit
-    def __str__(self):
-        """
-        Default string representation is the conventional X-Y pair in parenthesis, separated
-        by a comma, using the resolved coordinate values.
-        """
-        return '(%s,%s)' % self.get_coords()
-
-    @docit
-    def __repr__(self):
-        return '%s(%r, %r)' % (type(self).__name__, self.x, self.y)
-
-
-class Pt(Point):
-    """
-    Represents a `Point` at a fixed location.
-    """
-
-    def __init__(self, x, y):
-        self.__x = Float.cast(float(x))
-        self.__y = Float.cast(float(y))
-
-    @property
-    def x(self):
-        return self.__x
-
-    @property
-    def y(self):
-        return self.__y
-
-
 class Float(object):
     """
     Dynamic encapsulation of a floating point value.
@@ -560,17 +401,184 @@ class MeanLength(MeanMixin, NaryLength):
     pass
         
 
+class Point(object):
+    """
+    Abstract class provides the interface for all points.
+
+    Concrete subclasses must implement the `x` and `y` properties.
+
+    A `Point` acts like a two-tuple of it's coordinates as :samp:`({x}, {y})`,
+    by implementing the `__len__` and `__getitem__` methods.
+    """
+
+    __metaclass__ = abc.ABCMeta
+
+    @staticmethod
+    def cast(other, error_message=None):
+        """
+        Create a `Point` object from the given object if possible.
+
+        If ``other`` is already a `Point` (including an instance of any subclass of `Point`),
+        then it is simply returned.
+
+        If ``other`` is a sequence of length 2, it is assumed to hold the coordinates
+        of the point as :samp:`({x}, {y})`. In this case, it will create a fixed point,
+        an instance of the `FixedPoint` class.
+
+        If ``other`` is a ``float``, ``int``, or ``long`` value equal to 0, then it represents
+        the *origin*, and a fixed point positioned at `(0, 0)` is returned.
+
+        Otherwise a |TypeError| is raised with the given ``error_message``, or a default error message
+        is none is provided.
+        """
+        if isinstance(other, Point):
+            return other
+        elif isinstance(other, collections.Sequence):
+            if len(other) == 2:
+                return FixedPoint(*other)
+        elif isinstance(other, (int, float, long)):
+            if other == 0:
+                return FixedPoint(0, 0)
+
+        raise TypeError(error_message or ('Could not cast to a Point: %r' % (other,)))
+            
+    @abc.abstractproperty
+    def x(self):
+        """
+        A dynamic `Float` value representing the X coordinate of the point.
+
+        .. seealso::
+
+            `get_x`
+                To resolve this property.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractproperty
+    def y(self):
+        """
+        A dynamic `Float` value representing the Y coordinate of the point.
+
+        .. seealso::
+
+            `get_y`
+                To resolve this property.
+        """
+        raise NotImplementedError()
+
+    def get_x(self):
+        """
+        Resolves the `x` property to return the current value of the X coordinate.
+
+        .. seealso::
+            `x`
+                The corresponding dynamic property
+        """
+        return float(self.x)
+
+    def get_y(self):
+        """
+        Resolves the `y` property to return the current value of the Y coordinate.
+
+        .. seealso::
+            `y`
+                The corresponding dynamic property
+        """
+        return float(self.y)
+
+    def get_coords(self):
+        """
+        Resolves the point by returning a two-tuple of floats, giving the current 
+        X and Y coordinates of the point, respectively.
+
+        .. seealso:: `get_x`, `get_y`
+        """
+        raise NotImplementedError()
+
+    @docit
+    def __len__(self):
+        """
+        A `Point` acts like a two-tuple over it's X and Y coordinates, so its length
+        is always 2.
+        """
+        return 2;
+
+    @docit
+    def __getitem__(self, idx):
+        """
+        A `Point` acts like a two-tuple over it's `x` and `y` properties, this method
+        provides indexed-access on the object. 
+        """
+        if idx == 0:
+            return self.x
+        elif idx == 1:
+            return self.y
+        raise IndexError("Points have exactly two elements.")
+
+    @docit
+    def __str__(self):
+        """
+        Default string representation is the conventional X-Y pair in parenthesis, separated
+        by a comma, using the resolved coordinate values.
+        """
+        return '(%s,%s)' % self.get_coords()
+
+    @docit
+    def __repr__(self):
+        return '%s(%r, %r)' % (type(self).__name__, self.x, self.y)
+
+    def fix(self):
+        """
+        Creates and returns an instance of `FixedPoint` at the current location of this
+        point.
+        """
+        return FixedPoint(self.get_x(), self.get_y())
+
+
+
+class FixedPoint(Point):
+    """
+    Represents a `Point` at a fixed location.
+    """
+
+    def __init__(self, x, y):
+        #This is the correct order of calls: we want the `x` an `y` properties
+        # to return `Float` instances, but the internal cast to `float` will ensure
+        # they are static values.
+        self.__x = Float.cast(float(x))
+        self.__y = Float.cast(float(y))
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
+
 
 class Translated(Point):
     """
     A derived point which is a fixed translation from another Point.
     """
     def __init__(self, origin, dx=0, dy=0):
-        self.__origin = Point.cast(origin)
-        self.__dx = float(dx)
-        self.__dy = float(dy)
+        self._origin = Point.cast(origin)
+        self._x = Sum(self._origin.x, dx)
+        self._y = Sum(self._origin.y, dy)
 
-    def get_coords(self):
-        ox, oy = self.__origin.get_coords()
-        return (ox + self.__dx, oy + self.__dy)
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+    @docit
+    def __str__(self):
+        return '(%s + (%s,%s))' % (self._origin, self._x, self._y)
+
+    @docit
+    def __repr__(self):
+        return '%s(%r, %r, %r)' % (self._origin, self._x, self._y)
 

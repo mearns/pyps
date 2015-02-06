@@ -89,3 +89,20 @@ def test_abs():
     eval(geom.Difference(111, 986), 875)
     
 
+def test_translation():
+    uut = geom.Translated((5, 7))
+    eq_(uut.get_x(), 5)
+    eq_(uut.get_y(), 7)
+
+    uut = geom.Translated((5, 7), 5)
+    eq_(uut.get_x(), 10)
+    eq_(uut.get_y(), 7)
+
+    uut = geom.Translated((5, 7), 5, -3)
+    eq_(uut.get_x(), 10)
+    eq_(uut.get_y(), 4)
+
+    uut = geom.Translated((5, 7), dy=-3)
+    eq_(uut.get_x(), 5)
+    eq_(uut.get_y(), 4)
+
