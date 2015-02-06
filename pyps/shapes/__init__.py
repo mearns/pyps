@@ -353,7 +353,7 @@ class Circle(PaintableShape):
 
     def __init__(self, center, radius, **kwargs):
         self._center = geom.Point.cast(center, "Center must be a point: %r" % (center,))
-        self._radius = geom.Length.cast(radius, "Radius must be a length: %r" % (length,))
+        self._radius = geom.Length.cast(radius, "Radius must be a length: %r" % (radius,))
         self._bbox = self.BBox(self)
 
         super(Circle, self).__init__(**kwargs)
