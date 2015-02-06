@@ -75,6 +75,27 @@ class FixedFloat(Float):
     def get_float(self):
         return self._float_value
 
+    @docit
+    def __cmp__(self, other):
+        """
+        `FixedFloat` objects can be compared to numerical value on the basis of
+        their numerical value.
+        """
+        if isinstance(other, (int, long, float)):
+            return cmp(self._float_value, other)
+        return NotImplemented
+
+    @docit
+    def __rcmp__(self, other):
+        """
+        `FixedFloat` objects can be compared to numerical value on the basis of
+        their numerical value.
+        """
+        if isinstance(other, (int, long, float)):
+            return cmp(other, self._float_value)
+        return NotImplemented
+
+
 class Length(Float):
     """
     Represents a length. This is a `Float` with the added requirement that is cannot be negative.
@@ -534,6 +555,11 @@ class Point(object):
         """
         return FixedPoint(self.get_x(), self.get_y())
 
+    def translate(self, dx=0, dy=0):
+        """
+        Returns a new Point which has a translational relationship to this point.
+        """
+        return Translated(self, dx, dy)
 
 
 class FixedPoint(Point):
