@@ -2,10 +2,93 @@
 # vim: set fileencoding=utf-8: set encoding=utf-8:
 
 from pyps import geom
-import abc
+from pyps.shapes import Shape, UnionBox
 
-class Transform(object):
-    __metaclass__ = abc.ABCMeta
+import types
+import abc
+import collections
+
+class Transform(Shape, collections.MutableMapping):
+
+    def __init__(self, *shapes, **keyed_shapes):
+        self._box = self.Box(self)
+        self.__shapes = {}
+        self.add(*shapes, **keyed_shapes)
+
+    def add(self, *shapes, **keyed_shapes):
+        """
+        Adds multiple shapes to the collection, with or without keys.
+
+        Delegates to `add_shape`, but returns ``self`` for convenience.
+
+        :param \*shapes: Any positional arguments are passed to `add_shape` without
+            a ``key`` argument.
+
+        :param \*\*keyed_shapes:    Any keyword arguments are passed to `add_shape`,
+            using the keyword as the ``key``.
+
+        """
+        for shape in shapes:
+            self.add_shape(shape)
+        for k, v in keyed_shapes.iteritems():
+            self.add_shape(v, k)
+
+        return self
+
+    def add_shape(self, shape, key=None):
+        """
+        Adds a new shape to the collection. If a key is given, it must be a string
+        and can be used to retrieve the shape later. If a key is not given, a numeric
+        key will be generated for it.
+
+        In either case, the associated key is returned.
+
+        If you specify an existing key, you will get a |KeyError|. If you want to replace
+        an item, you need to delete the key from the collection first.
+        """
+        if not isinstance(shape, Shape):
+            raise TypeError('Can only add Shape objects: %r' % (shape,))
+        if key is None:
+            key = len(self.__shapes)
+        else:
+            if not isinstance(key, types.StringTypes):
+                raise TypeError('Key must be a string type: %r' % (key,))
+
+        if key in self.__shapes:
+            raise KeyError('Key already exists: %r' % (key,))
+        self.__shapes[key] = shape
+
+        return key
+
+    def __setitem__(self, key, value):
+        """
+        Delegate to `add_shape`.
+        """
+        self.add_shape(value, key)
+
+    def __delitem__(self, key):
+        """
+        Removes the item with the specified key from the collection.
+        """
+        del(self.__shapes[key])
+
+    def __len__(self):
+        return len(self.__shapes)
+
+    def __iter__(self):
+        return iter(self.__shapes)
+
+    def __getitem__(self, key):
+        return self.__shapes[key]
+
+    def itershapes(self):
+        return self.__shapes.itervalues()
+
+    def hittest(self, x, y):
+        for shape in self.itershapes():
+            if shape.hittest(x,y):
+                return True
+        return False
 
     @abc.abstractmethod
     def to_local(self, pt):
@@ -22,6 +105,18 @@ class Transform(object):
         which maps the given point from the local into the parent coordinate system.
         """
         raise NotImplementedError()
+
+    @property
+    def boundingbox(self):
+        return self._box
+
+    class Box(UnionBox):
+        def __init__(self, xform):
+            self._xform = xform
+
+        def iterboxes(self):
+            #FIXME: itershapes needs to iterate over the transformed shapes. Transformed shapes need to convert points, angles, and lengths.
+            return s.boundingbox for s in self._xform.itershapes()
         
 
 class Translation(Transform):

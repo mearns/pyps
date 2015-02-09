@@ -213,6 +213,7 @@ class Shape(object):
         raise NotImplementedError()
         
 
+
 class PaintableShape(Shape, Paintable):
     def __init__(self, title=None, stroke=None, fill=None, stroke_width=None):
         Shape.__init__(self, title)
@@ -287,9 +288,22 @@ class Box(Shape):
         """
         raise NotImplementedError()
 
+    def get_north(self):
+        return self.get_bound()[0]
+
+    def get_south(self):
+        return self.get_bound()[2]
+
+    def get_east(self):
+        return self.get_bound()[1]
+
+    def get_west(self):
+        return self.get_bound()[3]
+
     def get_width(self):
         """
         Returns the width of the box, the extent of the X coordinates.
+        This delegates to `get_bounds`.
         """
         n, e, s, w = self.get_bounds()
         return e - w
@@ -297,6 +311,7 @@ class Box(Shape):
     def get_height(self):
         """
         Returns the height of the box, the extent of the Y coordinates.
+        This delegates to `get_bounds`.
         """
         n, e, s, w = self.get_bounds()
         return n - s
@@ -354,6 +369,76 @@ class Box(Shape):
     class _LowerRightCorner(_Corner, _RightCorner, _LowerCorner): pass
     class _UpperLeftCorner(_Corner, _LeftCorner, _UpperCorner): pass
     class _UpperRightCorner(_Corner, _RightCorner, _UpperCorner): pass
+
+
+class UnionBox(Box):
+    """
+    An abstract base class that represents the union of other `Box` objects.
+
+    You have to subclass and implement the `iterboxes` method to iterate over the
+    actual component boxes.
+    """
+
+    @abc.abstractmethod
+    def iterboxes(self):
+        """
+        Return an interator over the component boxes.
+        """
+        raise NotImplementedError()
+
+    def get_bounds(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        ns = [b[0] for b in bounds]
+        es = [b[1] for b in bounds]
+        ss = [b[2] for b in bounds]
+        ws = [b[3] for b in bounds]
+        return (max(ns), max(es), min(ss), min(ws))
+
+    def get_north(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        vals = [b[0] for b in bounds]
+        return max(vals)
+
+    def get_south(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        vals = [b[2] for b in bounds]
+        return min(vals)
+        
+    def get_east(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        vals = [b[1] for b in bounds]
+        return max(vals)
+        
+    def get_west(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        vals = [b[3] for b in bounds]
+        return min(vals)
+
+    def get_width(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        east = max([b[1] for b in bounds])
+        west = min([b[3] for b in bounds])
+        return east - west
+
+    def get_height(self):
+        bounds = [o.get_bounds() for o in self._others]
+        if not bounds:
+            raise ValueError('Cannot have a union of no boxes.')
+        north = max([b[0] for b in bounds])
+        south = min([b[2] for b in bounds])
+        return north - south
 
 
 
