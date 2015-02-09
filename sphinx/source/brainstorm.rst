@@ -42,6 +42,13 @@ which other derived points can be generated. For instance, a simple
 transformation might be a *translation* of a source point a certain distance
 along a vector (represented by two other points).
 
+Creating transforms as wrappers doesn't seem to want to work well. It's
+difficult to do in a useful object oriented way (how do you provide correct
+access to the useful points and lengths specific to a shape?), and many of
+them seem impossible, particularly angles. How do you know the effects of a
+transformation on an angle. Is it always prserved for linear transformations?
+Maybe it is. So maybe I can do it.
+
 
 Layers
 ----------------

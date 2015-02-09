@@ -111,7 +111,6 @@ class Path(Paintable):
     #    #rcurveto
 
 
-
 class Shape(object):
     """
     This is the base class for all shapes. It defines the interface for shapes
