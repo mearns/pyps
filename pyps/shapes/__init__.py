@@ -125,6 +125,22 @@ class ShapeMeta(abc.ABCMeta):
 
     @staticmethod
     def point(*args):
+        """
+        A decorator for creating labeled points in a class descriptor.
+
+        Write a method which returns a dynamic `~pyps.geom.Point` object, and
+        decorate it with this, then the metaclass will automatically add it to the
+        dictionary of labeled points. Note that the decorated function will also be
+        removed from the class dict, so it won't exist as a function any more,
+        which is appropriate because transformations cant use those, they can only
+        use labeled points.
+
+        The name of the decorated function is used as the primary label for the
+        point. If you invoke without any arguments (e.g., ``@point`` or ``@point()``)
+        then that is the only key it can be accessed with. Otherwise, any additional
+        strings you pass in as positional arguments will be used as additional _non-canonical_
+        labels for the point as well.
+        """
         if len(args) == 1 and callable(args[0]):
             func = args[0]
             return ShapeMeta._LabeledPoint(func, [])
@@ -136,6 +152,9 @@ class ShapeMeta(abc.ABCMeta):
 
     @staticmethod
     def length(*args):
+        """
+        Like the `point` decorator, but for creating labeled lengths instead of points.
+        """
         if len(args) == 1 and callable(args[0]):
             func = args[0]
             return ShapeMeta._LabeledLength(func, [])
