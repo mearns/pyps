@@ -8,6 +8,7 @@ The `shapes` module defines the various built in shape objects.
 from docit import *
 import math
 import abc
+import collections
 
 from pyps import geom
 from pyps.art.color import Color
@@ -21,9 +22,9 @@ class Paintable(object):
     Simple base / mixin class for anything that has a configurable fill and stroke.
     """
     def __init__(self, paint=None, stroke=None, fill=None, stroke_width=None):
-        stroke = stroke or paint.get_stroke() 
-        fill = fill or paint.get_fill()
-        stroke_width = stroke_width if stroke_width is not None else paint.get_stroke_width()
+        stroke = stroke or None if paint is None else paint.get_stroke()
+        fill = fill or None if paint is None else paint.get_fill()
+        stroke_width = stroke_width if stroke_width is not None else (1.0 if paint is None else paint.get_stroke_width())
 
         self._stroke = Color.cast_or_none(stroke, 'Paintable stroke must be a color or None: %r' % (stroke,))
         self._fill = Color.cast_or_none(fill, 'Paintable fill must be a color or None: %r' % (fill,))
@@ -111,6 +112,222 @@ class Path(Paintable):
     #    #rcurveto
 
 
+class ShapeMeta(abc.ABCMeta):
+
+    class _LabeledObject(object):
+        def __init__(self, func, labels):
+            self.func = func
+            self.labels = labels
+
+    class _LabeledPoint(_LabeledObject): pass
+    class _LabeledLength(_LabeledObject): pass
+
+
+    @staticmethod
+    def point(*args):
+        if len(args) == 1 and callable(args[0]):
+            func = args[0]
+            return ShapeMeta._LabeledPoint(func, [])
+        else:
+            labels = args
+            def wrapper(func):
+                return ShapeMeta._LabeledPoint(func, labels)
+            return wrapper
+
+    @staticmethod
+    def length(*args):
+        if len(args) == 1 and callable(args[0]):
+            func = args[0]
+            return ShapeMeta._LabeledLength(func, [])
+        else:
+            labels = args
+            def wrapper(func):
+                return ShapeMeta._LabeledLength(func, labels)
+            return wrapper
+
+    def __new__(meta, name, bases, dct):
+        
+        points = {}
+        _pointkeys = []
+        lengths = {}
+        _lengthkeys = []
+        remove = set()
+        for k, v in dct.iteritems():
+            if isinstance(v, ShapeMeta._LabeledPoint):
+                labels = [k]
+                _pointkeys.append(k)
+                labels.extend(v.labels)
+                for label in labels:
+                    if label in points:
+                        raise KeyError('Duplicate labeled point: %s' % (label,))
+                    points[label] = v.func
+                remove.add(k)
+            elif isinstance(v, ShapeMeta._LabeledLength):
+                labels = [k]
+                _lengthkeys.append(k)
+                labels.extend(v.labels)
+                for label in labels:
+                    if label in points:
+                        raise KeyError('Duplicate labeled length: %s' % (label,))
+                    lengths[label] = v.func
+                remove.add(k)
+
+        #remove all the attributes we just captured as points and lengths.
+        for k in remove:
+            del(dct[k])
+
+        _pointkeys = tuple(_pointkeys)
+        _lengthkeys = tuple(_lengthkeys)
+
+        def method(func):
+            dct[func.__name__] = func
+            return func
+
+        #Implement the point functions for the class.
+        @method
+        def get_point(self, key):
+            """
+            Returns the associated labeled `~pyps.geom.Point` object for this shape.
+
+            Each class of shapes can provide a set of labeled points associated with each
+            instance of that shape. For instance, a circle might have a point labeled ``'center'``
+            to represent the center of the circle.
+
+            This method provides access to those labeled points for this instance.
+
+            The returned point is a dynamic `~pyps.geom.Point` which will always reflect
+            the appropriate point based on the current state of the shape.
+            """
+            try:
+                func = points[key]
+            except KeyError:
+                raise KeyError('No such point: %s' % (key,))
+            return func(self)
+
+        #FIXME: This isn't working real well, but it's a start. US-SHP16 will help.
+        if _pointkeys:
+            get_point.__doc__ += '\n\nThis class provides the following labaled points:\n\n'
+            for k in _pointkeys:
+                get_point.__doc__ += '``\'%s\'``\n' % k
+                func = points[k]
+                get_point.__doc__ += '\n'.join('        ' + line for line in func.__doc__.splitlines() if line.strip())
+                get_point.__doc__ += '\n'
+        else:
+            get_point.__doc__ += '\n\nThis class does not provide any labeled points.\n\n'
+
+        @method
+        def point_keys(self):
+            """
+            Return a sequence of all the canonical keys that can be accepted by `get_point`.
+            """
+            return _pointkeys
+
+        @method
+        def point_count(self):
+            """
+            Returns the number of labeled points accessible through `get_point`. This is implemented
+            as the length of `_pointkeys`, subclasses may want to do something more efficient.
+            """
+            return len(_pointkeys)
+
+        @method
+        def iterpointkeys(self):
+            """
+            Returns an iterator over the canonical keys that can be accepted by `get_point`. This is implemented
+            as an iterator over `_pointkeys`, subclasses may want to do something more efficient.
+            """
+            return iter(_pointkeys)
+
+        @method
+        def iterpoints(self):
+            """
+            Returns an iterator over the labeled points in this shape, in the order returned by `iterpointkeys`.
+            """
+            return iter(points[k] for k in _pointkeys)
+
+        @method
+        def iterpointitems(self):
+            """
+            Like `iterpoints` and `iterpointkeys`, but iterates over the :samp:`({key}, {point})` two-tuples
+            of labeled points.
+            """
+            return iter(((k, points[k]) for k in _pointkeys))
+
+        #Implement the length functions for the class.
+        @method
+        def get_length(self, key):
+            """
+            Returns the associated labeled `~pyps.geom.Length` for this shape.
+
+            This is similar to `get_point`, except instead of returning points, it returns
+            some intrinsic length. For instance, a circle might have a length labeled as
+            ``'radius'`` which is always equal to the radius of the circle.
+
+            These should only be lengths that are **intrinsic** to the shape itself. For instance,
+            distance between two specific points on the shape may be appropriate, but distance
+            between this shape and the origin, or this shape and any other shape or point is
+            _not_. The reason is that linear transformations will be applied to returned values,
+            which is only appropriate for intrinsic lengths.
+            """
+            try:
+                func = lengths[key]
+            except KeyError:
+                raise KeyError('No such length: %s' % (key,))
+            return func(self)
+
+        if _lengthkeys:
+            get_length.__doc__ += '\n\nThis class provides the following labaled lengths:\n\n'
+            for k in _lengthkeys:
+                get_length.__doc__ += '``\'%s\'``\n' % k
+                func = lengths[k]
+                get_length.__doc__ += '\n'.join('        ' + line for line in func.__doc__.splitlines() if line.strip())
+                get_length.__doc__ += '\n'
+        else:
+            get_length.__doc__ += '\n\nThis class does not provide any labeled lengths.\n\n'
+
+
+        @method
+        def length_keys(self):
+            """
+            Return a sequence of all the canonical keys that can be accepted by `get_length`.
+            """
+            return _lengthkeys
+
+        @method
+        def length_count(self):
+            """
+            Returns the number of labeled lengths accessible through `get_length`. This is implemented
+            as the length of `_lengthkeys`, subclasses may want to do something more efficient.
+            """
+            return len(_lengthkeys)
+
+        @method
+        def iterlengthkeys(self):
+            """
+            Returns an iterator over the canonical keys that can be accepted by `get_length`. This is implemented
+            as an iterator over `_lengthkeys`, subclasses may want to do something more efficient.
+            """
+            return iter(_lengthkeys)
+
+        @method
+        def iterlengths(self):
+            """
+            Returns an iterator over the labeled lengths in this shape, in the order returned by `iterlengthkeys`.
+            """
+            return iter(lengths[k] for k in _lengthkeys)
+
+        @method
+        def iterlengthitems(self):
+            """
+            Like `iterlengths` and `iterlengthkeys`, but iterates over the :samp:`({key}, {length})` two-tuples
+            of labeled lengths.
+            """
+            return iter(((k, lengths[k]) for k in _lengthkeys))
+
+        return super(ShapeMeta, meta).__new__(meta, name, bases, dct)
+        
+    
+
 class Shape(object):
     """
     This is the base class for all shapes. It defines the interface for shapes
@@ -122,11 +339,9 @@ class Shape(object):
     * `render`
 
     It is also a good idea to implement `boundingpoly`
-
-    You may also like to override `get_point`, `get_length`, and `get_angle`.
     """
 
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = ShapeMeta
 
     def __init__(self, title=None):
         self._title = title
@@ -214,111 +429,6 @@ class Shape(object):
     def render(self, capabilities=[]):
         raise NotImplementedError()
 
-    def get_point(self, key):
-        """
-        Returns the associated labeled `~pyps.geom.Point` object for this shape.
-
-        Each class of shapes can provide a set of labeled points associated with each
-        instance of that shape. For instance, a circle might have a point labeled ``'center'``
-        to represent the center of the circle.
-
-        This method provides access to those labeled points for this instance. The base
-        class doesn't provide any labeled points, so this always raises a |KeyError|.
-
-        The returned point should be a dynamic `~pyps.geom.Point` which will always reflect
-        the appropriate point based on the current state of the shape.
-
-        You should also implement the `point_keys` method to provide a sequence of all
-        the keys acceptable to this method.
-        """
-        raise KeyError('No such point: %s' % (key,))
-
-    def get_length(self, key):
-        """
-        Returns the associated labeled `~pyps.geom.Length` for this shape.
-
-        This is similar to `get_point`, except instead of returning points, it returns
-        some intrinsic length. For instance, a circle might have a length labeled as
-        ``'radius'`` which is always equal to the radius of the circle.
-
-        These should only be lengths that are **intrinsic** to the shape itself. For instance,
-        distance between two specific points on the shape may be appropriate, but distance
-        between this shape and the origin, or this shape and any other shape or point is
-        _not_. The reason is that linear transformations will be applied to returned values,
-        which is only appropriate for intrinsic lengths.
-
-        You should also implement the `length_keys` method to provide a sequence of all
-        the keys acceptable to this method.
-        """
-        raise KeyError('No such length: %s' % (key,))
-
-    def point_keys(self):
-        """
-        Return a sequence of all the canonical keys that can be accepted by `get_point`.
-        """
-        return []
-
-    def point_count(self):
-        """
-        Returns the number of labeled points accessible through `get_point`. This is implemented
-        as the length of `point_keys`, subclasses may want to do something more efficient.
-        """
-        return len(self.point_keys())
-
-    def iterpointkeys(self):
-        """
-        Returns an iterator over the canonical keys that can be accepted by `get_point`. This is implemented
-        as an iterator over `point_keys`, subclasses may want to do something more efficient.
-        """
-        return iter(self.point_keys())
-
-    def iterpoints(self):
-        """
-        Returns an iterator over the labeled points in this shape, in the order returned by `iterpointkeys`.
-        """
-        return iter(self.get_point(k) for k in self.iterpointkeys())
-
-    def iterpointitems(self):
-        """
-        Like `iterpoints` and `iterpointkeys`, but iterates over the :samp:`({key}, {point})` two-tuples
-        of labeled points.
-        """
-        return iter((k, self.get_point(k) for k in self.iterpointkeys())
-
-    def length_keys(self):
-        """
-        Return a sequence of all the canonical keys that can be accepted by `get_length`.
-        """
-        return []
-
-    def length_count(self):
-        """
-        Returns the number of labeled lengths accessible through `get_length`. This is implemented
-        as the length of `length_keys`, subclasses may want to do something more efficient.
-        """
-        return len(self.length_keys())
-
-    def iterlengthkeys(self):
-        """
-        Returns an iterator over the canonical keys that can be accepted by `get_length`. This is implemented
-        as an iterator over `length_keys`, subclasses may want to do something more efficient.
-        """
-        return iter(self.length_keys())
-
-    def iterlengths(self):
-        """
-        Returns an iterator over the labeled lengths in this shape, in the order returned by `iterlengthkeys`.
-        """
-        return iter(self.get_length(k) for k in self.iterlengthkeys())
-
-    def iterlengthitems(self):
-        """
-        Like `iterlengths` and `iterlengthkeys`, but iterates over the :samp:`({key}, {length})` two-tuples
-        of labeled lengths.
-        """
-        return iter((k, self.get_length(k) for k in self.iterlengthkeys())
-
-
     @property
     def points(self):
         """
@@ -374,66 +484,6 @@ class Shape(object):
             return self.__shape.get_length(key)
 
 
-class PointDictMixin(Shape):
-    """
-    A mixin for `Shape` subclasses that implements the relavant labeled points methods
-    based on a dictionary.
-    """
-    def __init__(self, points={}):
-        self.__points = points
-
-    def get_point(self, key):
-        try:
-            return self.__points[key]
-        except KeyError:
-            raise KeyError('No such point: %s' % (key,))
-
-    def point_keys(self):
-        return self.__points.keys()
-
-    def point_count(self):
-        return len(self.__points)
-
-    def iterpointkeys(self):
-        return iter(self.__points)
-
-    def iterpoints(self):
-        return iter(self.__points[k] for k in self.__points)
-
-    def iterpointitems(self):
-        return iter(k, self.__points[k] for k in self.__points)
-
-
-class LengthDictMixin(Shape):
-    """
-    A mixin for `Shape` subclasses that implements the relavant labeled lengths methods
-    based on a dictionary.
-    """
-    def __init__(self, lengths={}):
-        self.__lengths = lengths
-
-    def get_length(self, key):
-        try:
-            return self.__lengths[key]
-        except KeyError:
-            raise KeyError('No such length: %s' % (key,))
-
-    def length_keys(self):
-        return self.__lengths.keys()
-
-    def length_count(self):
-        return len(self.__lengths)
-
-    def iterlengthkeys(self):
-        return iter(self.__lengths)
-
-    def iterlengths(self):
-        return iter(self.__lengths[k] for k in self.__lengths)
-
-    def iterlengthitems(self):
-        return iter(k, self.__lengths[k] for k in self.__lengths)
-
-
 
 class PaintableShape(Shape, Paintable):
     def __init__(self, title=None, stroke=None, fill=None, stroke_width=None):
@@ -442,7 +492,7 @@ class PaintableShape(Shape, Paintable):
         Paintable.__init__(self, stroke=stroke, fill=fill, stroke_width=stroke_width)
 
 
-class Box(Shape, PointDictMixin, LengthDictMixin):
+class Box(Shape):
     """
     A `Box` is a rectangular `Shape` which is orthogonal to the X and Y axes.
     This is an abstract interface class, subclasses should implement
@@ -454,14 +504,7 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
         self._lowerright = self._LowerRightCorner(self)
         self._upperleft = self._UpperLeftCorner(self)
         self._upperright = self._UpperRightCorner(self)
-        PointDictMixin.__init__(self, dict(
-            lowerleft = self._lowerleft,
-            lowerright = self._lowerright,
-            upperleft = self._upperleft,
-            upperright = self._upperright,
-        ))
-        LengthDictMixin.__init__(self, dict())
-        Shape.__init__(self)
+        super(Box, self).__init__()
 
     def render(self, capabilities=[]):
         return [
@@ -472,8 +515,7 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
             Path.close(),
         ]
 
-
-    @property
+    @ShapeMeta.point()
     def lowerleft(self):
         """
         Returns a dynamic point which represents the lower left corner of the box
@@ -481,7 +523,7 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
         """
         return self._lowerleft
 
-    @property
+    @ShapeMeta.point()
     def lowerright(self):
         """
         Returns a dynamic point which represents the lower right corner of the box
@@ -489,7 +531,7 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
         """
         return self._lowerright
 
-    @property
+    @ShapeMeta.point()
     def upperleft(self):
         """
         Returns a dynamic point which represents the upper left corner of the box
@@ -497,7 +539,7 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
         """
         return self._upperleft
 
-    @property
+    @ShapeMeta.point()
     def upperright(self):
         """
         Returns a dynamic point which represents the upper right corner of the box
@@ -518,16 +560,30 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
         raise NotImplementedError()
 
     def get_north(self):
-        return self.get_bound()[0]
+        """
+        Returns the maximum Y coordinate of the box, based on `get_bounds`.
+        """
+        return self.get_bounds()[0]
 
     def get_south(self):
-        return self.get_bound()[2]
+        """
+        Returns the minimum Y coordinate of the box, based on `get_bounds`.
+        """
+        return self.get_bounds()[2]
 
     def get_east(self):
-        return self.get_bound()[1]
+        """
+        Returns the maximum X coordinate of the box, based on `get_bounds`.
+        """
+        return self.get_bounds()[1]
 
     def get_west(self):
-        return self.get_bound()[3]
+        """
+        Returns the minimum X coordinate of the box, based on `get_bounds`.
+        """
+        return self.get_bounds()[3]
+
+    #TODO: Create dynamic Lengths for width and height, use them as labeled lengths with the @ShapeMeta.length decorator.
 
     def get_width(self):
         """
@@ -558,16 +614,30 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
 
     @property
     def boundingbox(self):
+        """
+        The bounding box for a box is always itself.
+        """
         return self
 
     def get_boundingpoly(self, quality=0.5):
+        """
+        The bounding poly for a box is always itself.
+        """
         return self
 
     class _Corner(geom.Point):
+        """
+        Utility class to implement a dynamic `~pyps.geom.Point` representing a
+        particular corner of a box. This is an abstract base class, you need to
+        use one of the other concrete subclasses.
+        """
         def __init__(self, box):
             self._box = box
 
         def get_coords(self):
+            """
+            Coordinates of the point come from the `get_x` and `get_y` abstract methods.
+            """
             return (self.get_x(), self.get_y())
 
         @abc.abstractmethod
@@ -598,6 +668,7 @@ class Box(Shape, PointDictMixin, LengthDictMixin):
     class _LowerRightCorner(_Corner, _RightCorner, _LowerCorner): pass
     class _UpperLeftCorner(_Corner, _LeftCorner, _UpperCorner): pass
     class _UpperRightCorner(_Corner, _RightCorner, _UpperCorner): pass
+
 
 
 class UnionBox(Box):
@@ -680,14 +751,14 @@ class Circle(PaintableShape):
 
         super(Circle, self).__init__(**kwargs)
 
-    @property
+    @ShapeMeta.point('c')
     def center(self):
         """
         The Point representing the center of the circle.
         """
         return self._center
 
-    @property
+    @ShapeMeta.length('r')
     def radius(self):
         """
         A `~pyps.geom.Length` representing the radius of the circle.
