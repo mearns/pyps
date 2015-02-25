@@ -111,6 +111,20 @@ class Path(Paintable):
     #def curve(self, edx, edy, cp1dx, cp1dy, cp2dx, cp2dy):
     #    #rcurveto
 
+class CompoundIterator(collections.Iterator):
+    def __init__(self, *iterables):
+        self._iterators = [iter(i) for i in iterables]
+        self._length = len(iterables)
+        self._current = 0
+
+    def next(self):
+        while True:
+            if self._current >= self._length:
+                raise StopIteration()
+            try:
+                return self._iterators[self._current].next()
+            except StopIteration:
+                self._current += 1
 
 class ShapeMeta(abc.ABCMeta):
 
@@ -226,12 +240,16 @@ class ShapeMeta(abc.ABCMeta):
             get_point.__doc__ += '\n\nThis class does not provide any labeled points.\n\n'
 
         @method
-        def point_keys(self):
+        def point_keys_iter(self):
             """
-            Return a sequence of all the canonical keys that can be accepted by `get_point`.
+            Iterator over all the canonical keys that can be accepted by `get_point`.
             """
             #TODO: If there are duplicates, this won't be right.
-            return list(_pointkeys) + list(super(_class, self).point_keys())
+            return CompoundIterator(_pointkeys, super(_class, self).point_keys_iter())
+
+        @method
+        def point_count(self):
+            return len(_pointkeys) + super(_class, self).point_count()
 
         #Implement the length functions for the class.
         @method
@@ -256,12 +274,12 @@ class ShapeMeta(abc.ABCMeta):
 
 
         @method
-        def length_keys(self):
+        def length_keys_iter(self):
             """
             Return a sequence of all the canonical keys that can be accepted by `get_length`.
             """
             #TODO: If there are duplicates, this won't be right.
-            return list(_lengthkeys) + list(super(_class, self).length_keys())
+            return CompoundIterator(_lengthkeys, super(_class, self).length_keys_iter())
 
         _class = super(ShapeMeta, meta).__new__(meta, name, bases, dct)
         return _class
@@ -401,8 +419,7 @@ class Shape(object):
             return self.__shape.point_count()
 
         def __iter__(self):
-            #FIXME: Build a real iterator for this in the meta class.
-            return iter(self.__shape.point_keys())
+            return self.__shape.point_keys_iter()
 
         def __getitem__(self, key):
             return self.__shape.get_point(key)
@@ -419,8 +436,7 @@ class Shape(object):
             return self.__shape.length_count()
 
         def __iter__(self):
-            #FIXME: Build a real iterator for this in the meta class.
-            return iter(self.__shape.length_keys())
+            return self.__shape.length_keys_iter()
 
         def __getitem__(self, key):
             return self.__shape.get_length(key)
@@ -443,13 +459,13 @@ class Shape(object):
         """
         raise KeyError('No such point: %s' % (key,))
 
-    def point_keys(self):
+    def point_keys_iter(self):
         """
-        Return a sequence of all the canonical keys that can be accepted by `get_point`.
+        Iterate over all the canonical keys that can be accepted by `get_point`.
 
         This is empty in the base class.
         """
-        return []
+        return iter([])
 
     def get_length(self, key):
         """
@@ -469,13 +485,13 @@ class Shape(object):
         """
         raise KeyError('No such length: %s' % (key,))
 
-    def length_keys(self):
+    def length_keys_iter(self):
         """
-        Return a sequence of all the canonical keys that can be accepted by `get_length`.
+        Iterator over all the canonical keys that can be accepted by `get_length`.
 
         This is empty in the base class.
         """
-        return []
+        return iter([])
 
 
 class PaintableShape(Shape, Paintable):
