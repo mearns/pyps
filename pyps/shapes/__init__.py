@@ -201,7 +201,7 @@ class ShapeMeta(abc.ABCMeta):
             for k in _pointkeys:
                 get_point.__doc__ += '``\'%s\'``\n' % k
                 func = points[k]
-                get_point.__doc__ += '\n'.join('        ' + line for line in func.__doc__.splitlines() if line.strip())
+                get_point.__doc__ += '\n'.join('        ' + line for line in (func.__doc__.splitlines() if func.__doc__ else []) if line.strip())
                 get_point.__doc__ += '\n'
         else:
             get_point.__doc__ += '\n\nThis class does not provide any labeled points.\n\n'
@@ -231,7 +231,7 @@ class ShapeMeta(abc.ABCMeta):
             for k in _lengthkeys:
                 get_length.__doc__ += '``\'%s\'``\n' % k
                 func = lengths[k]
-                get_length.__doc__ += '\n'.join('        ' + line for line in func.__doc__.splitlines() if line.strip())
+                get_length.__doc__ += '\n'.join('        ' + line for line in (func.__doc__.splitlines() if func.__doc__ else []) if line.strip())
                 get_length.__doc__ += '\n'
         else:
             get_length.__doc__ += '\n\nThis class does not provide any labeled lengths.\n\n'
@@ -382,6 +382,7 @@ class Shape(object):
             return self.__shape.point_count()
 
         def __iter__(self):
+            #FIXME: Build a real iterator for this in the meta class.
             return iter(self.__shape.point_keys())
 
         def __getitem__(self, key):
@@ -399,6 +400,7 @@ class Shape(object):
             return self.__shape.length_count()
 
         def __iter__(self):
+            #FIXME: Build a real iterator for this in the meta class.
             return iter(self.__shape.length_keys())
 
         def __getitem__(self, key):
