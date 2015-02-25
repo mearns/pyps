@@ -16,4 +16,7 @@ if __name__ == '__main__':
     print c.points['center']
     print list(c.lengths)
 
+    box = c.boundingbox()
+    print box.point_keys()
+
 

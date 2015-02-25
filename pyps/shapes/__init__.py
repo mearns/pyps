@@ -180,28 +180,19 @@ class ShapeMeta(abc.ABCMeta):
         _lengthkeys = tuple(_lengthkeys)
 
         def method(func):
-            dct[func.__name__] = func
-            return func
+            return dct.setdefault(func.__name__, func)
+
+        _class = None
 
         #Implement the point functions for the class.
         @method
         def get_point(self, key):
             """
-            Returns the associated labeled `~pyps.geom.Point` object for this shape.
-
-            Each class of shapes can provide a set of labeled points associated with each
-            instance of that shape. For instance, a circle might have a point labeled ``'center'``
-            to represent the center of the circle.
-
-            This method provides access to those labeled points for this instance.
-
-            The returned point is a dynamic `~pyps.geom.Point` which will always reflect
-            the appropriate point based on the current state of the shape.
             """
             try:
                 func = points[key]
             except KeyError:
-                raise KeyError('No such point: %s' % (key,))
+                return super(_class, self).get_point(key)
             return func(self)
 
         #FIXME: This isn't working real well, but it's a start. US-SHP16 will help.
@@ -220,54 +211,14 @@ class ShapeMeta(abc.ABCMeta):
             """
             Return a sequence of all the canonical keys that can be accepted by `get_point`.
             """
-            return _pointkeys
-
-        @method
-        def point_count(self):
-            """
-            Returns the number of labeled points accessible through `get_point`. This is implemented
-            as the length of `_pointkeys`, subclasses may want to do something more efficient.
-            """
-            return len(_pointkeys)
-
-        @method
-        def iterpointkeys(self):
-            """
-            Returns an iterator over the canonical keys that can be accepted by `get_point`. This is implemented
-            as an iterator over `_pointkeys`, subclasses may want to do something more efficient.
-            """
-            return iter(_pointkeys)
-
-        @method
-        def iterpoints(self):
-            """
-            Returns an iterator over the labeled points in this shape, in the order returned by `iterpointkeys`.
-            """
-            return iter(points[k] for k in _pointkeys)
-
-        @method
-        def iterpointitems(self):
-            """
-            Like `iterpoints` and `iterpointkeys`, but iterates over the :samp:`({key}, {point})` two-tuples
-            of labeled points.
-            """
-            return iter(((k, points[k]) for k in _pointkeys))
+            print "Class:", _class
+            print "Super:", super(_class, self)
+            return list(_pointkeys) + list(super(_class, self).point_keys())
 
         #Implement the length functions for the class.
         @method
         def get_length(self, key):
             """
-            Returns the associated labeled `~pyps.geom.Length` for this shape.
-
-            This is similar to `get_point`, except instead of returning points, it returns
-            some intrinsic length. For instance, a circle might have a length labeled as
-            ``'radius'`` which is always equal to the radius of the circle.
-
-            These should only be lengths that are **intrinsic** to the shape itself. For instance,
-            distance between two specific points on the shape may be appropriate, but distance
-            between this shape and the origin, or this shape and any other shape or point is
-            _not_. The reason is that linear transformations will be applied to returned values,
-            which is only appropriate for intrinsic lengths.
             """
             try:
                 func = lengths[key]
@@ -293,38 +244,8 @@ class ShapeMeta(abc.ABCMeta):
             """
             return _lengthkeys
 
-        @method
-        def length_count(self):
-            """
-            Returns the number of labeled lengths accessible through `get_length`. This is implemented
-            as the length of `_lengthkeys`, subclasses may want to do something more efficient.
-            """
-            return len(_lengthkeys)
-
-        @method
-        def iterlengthkeys(self):
-            """
-            Returns an iterator over the canonical keys that can be accepted by `get_length`. This is implemented
-            as an iterator over `_lengthkeys`, subclasses may want to do something more efficient.
-            """
-            return iter(_lengthkeys)
-
-        @method
-        def iterlengths(self):
-            """
-            Returns an iterator over the labeled lengths in this shape, in the order returned by `iterlengthkeys`.
-            """
-            return iter(lengths[k] for k in _lengthkeys)
-
-        @method
-        def iterlengthitems(self):
-            """
-            Like `iterlengths` and `iterlengthkeys`, but iterates over the :samp:`({key}, {length})` two-tuples
-            of labeled lengths.
-            """
-            return iter(((k, lengths[k]) for k in _lengthkeys))
-
-        return super(ShapeMeta, meta).__new__(meta, name, bases, dct)
+        _class = super(ShapeMeta, meta).__new__(meta, name, bases, dct)
+        return _class
         
     
 
@@ -461,7 +382,7 @@ class Shape(object):
             return self.__shape.point_count()
 
         def __iter__(self):
-            return self.__shape.iterpointkeys()
+            return iter(self.__shape.point_keys())
 
         def __getitem__(self, key):
             return self.__shape.get_point(key)
@@ -478,11 +399,62 @@ class Shape(object):
             return self.__shape.length_count()
 
         def __iter__(self):
-            return self.__shape.iterlengthkeys()
+            return iter(self.__shape.length_keys())
 
         def __getitem__(self, key):
             return self.__shape.get_length(key)
 
+    def get_point(self, key):
+        """
+        Returns the associated labeled `~pyps.geom.Point` object for this shape.
+
+        Each class of shapes can provide a set of labeled points associated with each
+        instance of that shape. For instance, a circle might have a point labeled ``'center'``
+        to represent the center of the circle.
+
+        This method provides access to those labeled points for this instance.
+
+        The returned point is a dynamic `~pyps.geom.Point` which will always reflect
+        the appropriate point based on the current state of the shape.
+
+        The base implementation does not provide any labeled points, so this always
+        raises a |KeyError|.
+        """
+        raise KeyError('No such point: %s' % (key,))
+
+    def point_keys(self):
+        """
+        Return a sequence of all the canonical keys that can be accepted by `get_point`.
+
+        This is empty in the base class.
+        """
+        return []
+
+    def get_length(self, key):
+        """
+        Returns the associated labeled `~pyps.geom.Length` for this shape.
+
+        This is similar to `get_length`, except instead of returning lengths, it returns
+        some intrinsic length. For instance, a circle might have a length labeled as
+        ``'radius'`` which is always equal to the radius of the circle.
+
+        These should only be lengths that are **intrinsic** to the shape itself. For instance,
+        distance between two specific lengths on the shape may be appropriate, but distance
+        between this shape and the origin, or this shape and any other shape or length is
+        _not_. The reason is that linear transformations will be applied to returned values,
+        which is only appropriate for intrinsic lengths.
+
+        The base class doesn't provide any labeled lengths, so this will always raise a |KeyError|.
+        """
+        raise KeyError('No such length: %s' % (key,))
+
+    def length_keys(self):
+        """
+        Return a sequence of all the canonical keys that can be accepted by `get_length`.
+
+        This is empty in the base class.
+        """
+        return []
 
 
 class PaintableShape(Shape, Paintable):
