@@ -230,8 +230,7 @@ class ShapeMeta(abc.ABCMeta):
             """
             Return a sequence of all the canonical keys that can be accepted by `get_point`.
             """
-            print "Class:", _class
-            print "Super:", super(_class, self)
+            #TODO: If there are duplicates, this won't be right.
             return list(_pointkeys) + list(super(_class, self).point_keys())
 
         #Implement the length functions for the class.
@@ -242,7 +241,7 @@ class ShapeMeta(abc.ABCMeta):
             try:
                 func = lengths[key]
             except KeyError:
-                raise KeyError('No such length: %s' % (key,))
+                return super(_class, self).get_length(key)
             return func(self)
 
         if _lengthkeys:
@@ -261,7 +260,8 @@ class ShapeMeta(abc.ABCMeta):
             """
             Return a sequence of all the canonical keys that can be accepted by `get_length`.
             """
-            return _lengthkeys
+            #TODO: If there are duplicates, this won't be right.
+            return list(_lengthkeys) + list(super(_class, self).length_keys())
 
         _class = super(ShapeMeta, meta).__new__(meta, name, bases, dct)
         return _class
