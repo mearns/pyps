@@ -912,8 +912,8 @@ class Union(Shape):
     """
 
     def __init__(self):
-        self._bbox = self.Box(self)
         super(Union, self).__init__()
+        self._bbox = self.Box(self)
 
     def render(self):
         return sum(s.render() for s in self.itershapes)
@@ -955,14 +955,11 @@ class Union(Shape):
 
 class Group(Union, collections.MutableMapping):
     """
-    Represents a container for any number of `~pyps.shapes.Shape` objects and acts as a
-    local coordinate system
-    for the contained shapes, which is transformed relative to the coordinate system
-    of the container itself.
+    A `Union` of `Shape` objects to which shapes can be added and removed.
     """
 
     def __init__(self, *shapes, **keyed_shapes):
-        self._box = self.Box(self)
+        super(Group, self).__init__()
         self.__shapes = {}
         self.add(*shapes, **keyed_shapes)
 
@@ -1052,22 +1049,6 @@ class Group(Union, collections.MutableMapping):
         """
         return self.__shapes.itervalues()
 
-
-    @abc.abstractmethod
-    def to_local(self, pt):
-        """
-        Returns a new `~pyps.geom.Point` object dynamically linked to the given ``pt``
-        which maps the given point from the parent into the local coordinate system.
-        """
-        raise NotImplementedError()
-
-    @abc.abstractmethod
-    def to_global(self, pt):
-        """
-        Returns a new `~pyps.geom.Point` object dynamically linked to the given ``pt``
-        which maps the given point from the local into the parent coordinate system.
-        """
-        raise NotImplementedError()
 
 class Circle(PaintableShape):
 

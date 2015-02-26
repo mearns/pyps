@@ -1,24 +1,15 @@
 #! /usr/bin/env python
 # vim: set fileencoding=utf-8: set encoding=utf-8:
 
-from pyps.shapes import Circle, Union
+from pyps.shapes import Circle, Group
 
 from nose.tools import *
-
-
-class TestUnion(Union):
-    def __init__(self, *shapes):
-        super(TestUnion, self).__init__()
-        self.shapes = shapes
-
-    def itershapes(self):
-        return iter(self.shapes)
 
 
 def test_union_001():
     c1 = Circle((0, 0), 1)
     c2 = Circle((2, 0), 1)
-    uut = TestUnion(c1, c2)
+    uut = Group(c1, c2)
 
     bbox = uut.boundingbox
     eq_(bbox.get_width(), 4)
