@@ -9,6 +9,12 @@ from nose.tools import *
 
 import math
 
+def test_area():
+    c = Circle((3, 4), 7)
+
+    eq_(float(c.area), math.pi*49)
+    eq_(float(c.area), c.get_area())
+
 def test_lengths():
     c = Circle((3, 4), 7)
 
