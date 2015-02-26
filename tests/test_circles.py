@@ -195,3 +195,23 @@ def test_bbox():
     eq_(UR.get_coords(), (10, 11))
     eq_(center.get_coords(), (3, 4), uut.get_bounds())
 
+    c.points.center.moveTo(17, 3)
+    c.lengths.radius.set(5)
+
+    eq_(uut.get_area(), 100)
+    eq_(uut.get_area(), float(area))
+    eq_(uut.get_width(), 10)
+    eq_(uut.get_width(), float(w))
+    eq_(uut.get_height(), 10)
+    eq_(uut.get_height(), float(h))
+    eq_(uut.get_diagonal(), math.sqrt(10*10 + 10*10))
+    eq_(uut.get_diagonal(), float(diag))
+    eq_(uut.get_perimeter(), 4*10)
+    eq_(uut.get_perimeter(), float(perim))
+    eq_(LL.get_coords(), (12, -2))
+    eq_(UL.get_coords(), (12, 8))
+    eq_(LR.get_coords(), (22, -2))
+    eq_(UR.get_coords(), (22, 8))
+    eq_(center.get_coords(), (17, 3), uut.get_bounds())
+
+
