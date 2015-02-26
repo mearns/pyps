@@ -20,6 +20,7 @@ if __name__ == '__main__':
 
     doc.add_shape(g)
     doc.add_shape(c)
+    doc.add_shape(c.boundingbox)
 
 
     writer = EPSWriter()

@@ -569,11 +569,11 @@ class Box(Shape):
     def render(self, capabilities=[]):
         #FIXME: This is wrong, these aren't static methods.
         return [
-            Path.moveTo(self.lowerleft),
-            Path.lineTo(self.upperleft),
-            Path.lineTo(self.upperright),
-            Path.lineTo(self.lowerright),
-            Path.close(),
+            Path().moveTo(self._lowerleft)
+                .lineTo(self._upperleft)
+                .lineTo(self._upperright)
+                .lineTo(self._lowerright)
+                .close(),
         ]
 
     @ShapeMeta.point('c')
