@@ -950,7 +950,7 @@ class Union(Shape):
         self._bbox = self.Box(self)
 
     def render(self):
-        return sum(s.render() for s in self.itershapes)
+        return sum((s.render() for s in self.itershapes), [])
         
     @abc.abstractmethod
     def itershapes(self):

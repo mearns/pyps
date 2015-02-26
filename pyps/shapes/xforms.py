@@ -148,7 +148,7 @@ class TransformationGroup(Group):
         return self._xforms[key]
 
     def render(self, capabilities=[]):
-        paths = sum(s.render(capabilities) for s in self.itershapes())
+        paths = sum((s.render(capabilities) for s in self.itershapes()), [])
         return self._transformation.render_local(paths, capabilities)
 
     def hittest(self, x, y):
