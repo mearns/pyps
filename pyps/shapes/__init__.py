@@ -28,9 +28,24 @@ class Paintable(object):
         fill = fill or None if paint is None else paint.get_fill()
         stroke_width = stroke_width if stroke_width is not None else (1.0 if paint is None else paint.get_stroke_width())
 
+        self.set_stroke(stroke)
+        self.set_fill(fill)
+        self.set_stroke_width(stroke_width)
+
+
+    def copy_from(self, paintable):
+        self.set_stroke(paintable.get_stroke())
+        self.set_stroke_width(paintable.get_stroke_width())
+        self.set_fill(paintable.get_fill())
+
+    def set_stroke(self, stroke):
         self._stroke = Color.cast_or_none(stroke, 'Paintable stroke must be a color or None: %r' % (stroke,))
-        self._fill = Color.cast_or_none(fill, 'Paintable fill must be a color or None: %r' % (fill,))
+
+    def set_stroke_width(self, stroke_width):
         self._stroke_width = geom.Length.cast(stroke_width, 'Stroke-width must be a length: %r' % (stroke_width,))
+
+    def set_fill(self, fill):
+        self._fill = Color.cast_or_none(fill, 'Paintable fill must be a color or None: %r' % (fill,))
 
     def get_fill(self):
         return self._fill
@@ -46,6 +61,10 @@ class Paintable(object):
 
     def has_stroke(self):
         return self._stroke is not None
+
+    def Path(self, **kwargs):
+        kwargs.setdefault('paint', self)
+        return Path(**kwargs)
 
 
 class Path(Paintable):
@@ -545,6 +564,28 @@ class PaintableShape(Shape, Paintable):
         stroke = stroke or (0,0,0)
         Paintable.__init__(self, stroke=stroke, fill=fill, stroke_width=stroke_width)
 
+class Painted(PaintableShape):
+    def __init__(self, shape, *args, **kwargs):
+        self._shape = shape
+        super(Painted, self).__init__(*args, **kwargs)
+
+    @property
+    def boundingbox(self):
+        return self._shape.boundingbox
+
+    def hittest(self, x, y):
+        return self._shape.hittest(x, y)
+
+    def paint_path(self, path):
+        if not path.has_stroke() and not path.has_fill():
+            path.copy_from(self)
+        return path
+
+    def render(self, capabilities=[]):
+        return map(self.paint_path, self._shape.render(capabilities))
+
+    def describe(self):
+        return '%s %s' % (super(Painted, self).describe(), self._shape)
 
 class Box(Shape):
     """
@@ -567,7 +608,6 @@ class Box(Shape):
         self._diagonal = self._Diagonal(self)
 
     def render(self, capabilities=[]):
-        #FIXME: This is wrong, these aren't static methods.
         return [
             Path().moveTo(self._lowerleft)
                 .lineTo(self._upperleft)
@@ -1222,7 +1262,7 @@ class Circle(PaintableShape):
     #TODO: get_boundingpoly.
 
     def render(self, capabilities=[]):
-        return [Path(paint=self).circle(self._center, self._radius)]
+        return [self.Path().circle(self._center, self._radius)]
 
     class BBox(Box):
         """

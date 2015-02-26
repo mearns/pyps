@@ -174,6 +174,7 @@ class TransformationGroup(Group):
 
     class Box(UnionBox):
         def __init__(self, xform):
+            super(TransformationGroup.Box, self).__init__()
             self._xform = xform
 
         def iterboxes(self):

@@ -105,6 +105,7 @@ class EPSWriter(Writer):
         self._ostream = ostream
 
         try:
+            #FIXME: Set the bounding box correctly.
             ostream.write(r"""%!PS-Adobe-3.0 EPSF-3.0
 %%BoundingBox 0 0 100 100
 %%Creator: pyps
