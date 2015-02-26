@@ -6,14 +6,20 @@ from pyps.geom import Point
 
 from nose.tools import *
 
-def test_circle_names():
+def test_circle():
     c = Circle((3, 4), 7)
 
     expected_names = dict(
         center = ['c'],
+        north = ['n', 'up', 'u'],
+        south = ['s', 'down', 'd'],
+        #east = ['e', 'right', 'r'],
+        #west = ['w', 'left', 'l'],
     )
 
-    eq_(c.points['center'], (3, 4))
+    ok_(c.points['center'].is_at(3, 4))
+    ok_(c.points['north'].is_at(3, 11))
+    ok_(c.points['south'].is_at(3, -3))
 
     #Make sure the set of keys contains all of the expected keys.
     ok_(set(expected_names.keys()) <= set(c.points.keys()), c.points.keys())

@@ -789,6 +789,12 @@ class Circle(PaintableShape):
         self._radius = geom.Length.cast(radius, "Radius must be a length: %r" % (radius,))
         self._bbox = self.BBox(self)
 
+        nrad = geom.Negative(self._radius)
+        self._north = geom.Translated(self._center, dy=self._radius)
+        self._south = geom.Translated(self._center, dy=nrad)
+        self._east = geom.Translated(self._center, dx=self._radius)
+        self._west = geom.Translated(self._center, dx=nrad)
+
         super(Circle, self).__init__(**kwargs)
 
     @ShapeMeta.point('c')
@@ -797,6 +803,22 @@ class Circle(PaintableShape):
         The Point representing the center of the circle.
         """
         return self._center
+
+    @ShapeMeta.point('n', 'up', 'u')
+    def north(self):
+        """
+        The `Point` representing the northern-most point of the circle, which
+        is the point with the greatest Y coordinate value.
+        """
+        return self._north
+
+    @ShapeMeta.point('s', 'down', 'd')
+    def south(self):
+        """
+        The `Point` representing the southern-most point of the circle, which
+        is the point with the minimum Y coordinate value.
+        """
+        return self._south
 
     @ShapeMeta.length('r')
     def radius(self):

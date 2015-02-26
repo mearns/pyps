@@ -131,11 +131,17 @@ class Abs(Length):
         return abs(float(self.__other))
 
 class Negative(Float):
+    """
+    A dynamic `Float` which is always the negative of another `Float`.
+    """
     def __init__(self, other):
         self.__other = Float.cast(other)
 
     def get_float(self):
         return -(self.__other.get_float())
+
+    def __str__(self):
+        return '-%s' % self.__other
 
 
 class Angle(Float):
@@ -464,6 +470,10 @@ class Point(object):
 
     A `Point` acts like a two-tuple of it's coordinates as :samp:`({x}, {y})`,
     by implementing the `__len__` and `__getitem__` methods.
+
+    Note that we don't have any built in ``__eq__`` method, because points may be
+    equal at one moment, and unequal at another. You can use `is_at` to determine if
+    the point currently resolves to specified coordinates.
     """
 
     __metaclass__ = abc.ABCMeta
@@ -496,6 +506,13 @@ class Point(object):
                 return FixedPoint(0, 0)
 
         raise TypeError(error_message or ('Could not cast to a Point: %r' % (other,)))
+
+    def is_at(self, x, y):
+        """
+        Check to see if this point currently resolves to the specified x and y
+        coordinates.
+        """
+        return (float(x) == self.get_x()) and (float(y) == self.get_y())
             
     @abc.abstractproperty
     def x(self):
@@ -629,9 +646,18 @@ class FixedPoint(Point):
 
 class Translated(Point):
     """
-    A derived point which is a fixed translation from another Point.
+    A derived point which is a specified rectangular translation from another Point.
     """
     def __init__(self, pt, dx=0, dy=0):
+        """
+        :param Point pt:    The `Point` from which this point is translated.
+        :param Float dx:    Optional, the translation of this point from the given ``pt``,
+            in the horizontal (X) direction. This is anything that can be passed to
+            a `Sum` (meaning anything that can be cast to a `Float`). The default is 0.
+
+        :param Float dy:    Optional, like ``dx``, but for the vertical translation.
+            Default is 0.
+        """
         self._pt = Point.cast(pt)
         self._x = Sum(self._pt.x, dx)
         self._y = Sum(self._pt.y, dy)
