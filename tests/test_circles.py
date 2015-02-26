@@ -69,6 +69,63 @@ def test_pt_move():
     ok_(uut.points['east'].is_at(16, 5))
     ok_(uut.points['west'].is_at(2, 5))
 
+
+def test_radius_change():
+    uut = Circle((3, 4), 7)
+
+    rad = uut.lengths.r
+    diam = uut.lengths.d
+    circum = uut.lengths.c
+    area = uut.area
+    n = uut.points.n
+    e = uut.points.e
+    s = uut.points.s
+    w = uut.points.w
+    c = uut.points.c
+
+    eq_(uut.get_radius(), 7)
+    eq_(uut.get_diameter(), 14)
+    eq_(uut.get_circumference(), 14*math.pi)
+    eq_(uut.get_area(), 49*math.pi)
+    ok_(uut.points['center'].is_at(3, 4))
+    ok_(uut.points['north'].is_at(3, 11))
+    ok_(uut.points['south'].is_at(3, -3))
+    ok_(uut.points['east'].is_at(10, 4))
+    ok_(uut.points['west'].is_at(-4, 4))
+    eq_(uut.get_radius(), float(rad))
+    eq_(uut.get_diameter(), float(diam))
+    eq_(uut.get_circumference(), float(circum))
+    eq_(uut.get_area(), float(area))
+    eq_(uut.points['center'].get_coords(), c.get_coords())
+    eq_(uut.points['north'].get_coords(), n.get_coords())
+    eq_(uut.points['east'].get_coords(), e.get_coords())
+    eq_(uut.points['south'].get_coords(), s.get_coords())
+    eq_(uut.points['west'].get_coords(), w.get_coords())
+
+
+    rad.set(3)
+    eq_(uut.get_radius(), 3)
+    eq_(uut.get_diameter(), 6)
+    eq_(uut.get_circumference(), 6*math.pi)
+    eq_(uut.get_area(), 9*math.pi)
+    ok_(uut.points['center'].is_at(3, 4))
+    ok_(uut.points['north'].is_at(3, 7))
+    ok_(uut.points['south'].is_at(3, 1))
+    ok_(uut.points['east'].is_at(6, 4))
+    ok_(uut.points['west'].is_at(0, 4))
+    eq_(uut.get_radius(), float(rad))
+    eq_(uut.get_diameter(), float(diam))
+    eq_(uut.get_circumference(), float(circum))
+    eq_(uut.get_area(), float(area))
+    eq_(uut.points['center'].get_coords(), c.get_coords())
+    eq_(uut.points['north'].get_coords(), n.get_coords())
+    eq_(uut.points['east'].get_coords(), e.get_coords())
+    eq_(uut.points['south'].get_coords(), s.get_coords())
+    eq_(uut.points['west'].get_coords(), w.get_coords())
+
+
+
+
 def test_points():
     c = Circle((3, 4), 7)
 

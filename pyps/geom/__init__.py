@@ -127,7 +127,11 @@ class FixedLength(FixedFloat, Length):
     """
     A `Length` object with a fixed value.
     """
-    pass
+    def set(self, val):
+        val = float(val)
+        if val < 0:
+            raise ValueError('Cannot set length to negative: %r' % (val,))
+        super(FixedLength, self).set(val)
 
 class Abs(Length):
     def __init__(self, other):
