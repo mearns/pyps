@@ -1027,6 +1027,8 @@ class Group(Union, collections.MutableMapping):
 
         If you specify an existing key, you will get a |KeyError|. If you want to replace
         an item, you need to delete the key from the collection first.
+
+        All additions to the collection end up coming through here.
         """
         if not isinstance(shape, Shape):
             raise TypeError('Can only add Shape objects: %r' % (shape,))
@@ -1042,6 +1044,14 @@ class Group(Union, collections.MutableMapping):
 
         return key
 
+    def delete_shape(self, key):
+        """
+        Deletes the shape with the specified key from the collection.
+
+        All removals from the collection come through here.
+        """
+        del(self.__shapes[key])
+
     @docit
     def __setitem__(self, key, value):
         """
@@ -1054,7 +1064,7 @@ class Group(Union, collections.MutableMapping):
         """
         Removes the item with the specified key from the collection.
         """
-        del(self.__shapes[key])
+        self.delete_shape(key)
 
     @docit
     def __len__(self):

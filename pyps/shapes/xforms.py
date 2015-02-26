@@ -2,7 +2,7 @@
 # vim: set fileencoding=utf-8: set encoding=utf-8:
 
 from pyps import geom
-from pyps.shapes import Shape, UnionBox, Box, Path
+from pyps.shapes import Shape, Group, UnionBox, Box, Path
 
 from docit import *
 
@@ -24,14 +24,13 @@ class Transformation(object):
 
     def __init__(self):
         super(Transformation, self).__init__()
-        self._box = self.Box(self)
-
-    @property
-    def boundingbox(self):
-        return self._box
 
     @abc.abstractmethod
     def length_to_global(self, length):
+        return length
+
+    @abc.abstractmethod
+    def length_to_local(self, length):
         return length
 
     @abc.abstractmethod
@@ -39,40 +38,29 @@ class Transformation(object):
         return pt
 
     @abc.abstractmethod
+    def point_to_local(self, pt):
+        return pt
+
+    @abc.abstractmethod
     def render_local(self, paths, capabilities=[]):
+        """
+        Given a sequence of paths from the local coordinate space, render it in the
+        global coordinate space.
+        """
         raise NotImplementedError()
 
     def transform(self, *shapes):
+        """
+        Returns a new instance of `Transform` for this transformation and the given 
+        shapes.
+
+        If only one ``shape`` is given, returns a scalar value, the Transform for that
+        shape. Otherwise, returns a sequence of Transforms for the given shapes.
+        """
         shapes = [self.Transform(self, shape) for shape in shapes]
         if len(shapes) == 1:
             return shapes[0]
         return shapes
-
-    def render(self, capabilities=[]):
-        paths = sum(s.render(capabilities) for s in self.itershapes())
-        return self.render_local(paths, capabilities)
-
-    def hittest(self, x, y):
-        """
-        Hittest simply delegates to all of the contained shapes. If any of them hit,
-        then the container hits.
-
-        The given point is in the parent ("global") coordinate space, but it will
-        be translated to the local coordinate space when doing the hittest on the
-        contained shapes, since those shapes operate entirely in the local coordinate
-        space.
-        """
-        x, y = self.to_local(geom.FixedPoint(x, y)).get_coords()
-        return super(Transformation, self).hittest(x, y)
-
-
-    class Box(UnionBox):
-        def __init__(self, xform):
-            self._xform = xform
-
-        def iterboxes(self):
-            #FIXME: itershapes needs to iterate over the transformed shapes. Transformed shapes need to convert points, angles, and lengths.
-            return (s.boundingbox for s in self._xform.itershapes())
 
     class Transform(Shape):
         """
@@ -134,19 +122,85 @@ class Transformation(object):
                 xs = sorted([pt.get_x() for pt in points])
                 return ys[3], xs[3], ys[0], xs[0]
                 
+
+class TransformationGroup(Group):
+    def __init__(self, transformation, *shapes, **keyed_shapes):
+        self._transformation = transformation
+        self._xforms = {}
+        self._box = self.Box(self)
+        super(TransformationGroup, self).__init__(*shapes, **keyed_shapes)
+
+    def add_shape(self, shape, key=None):
+        key = super(TransformationGroup, self).add_shape(shape, key)
+        self._xforms[key] = self._transformation.transform(shape)
+        return key
+
+    def delete_shape(self, key):
+        super(TransformationGroup, self).delete_shape(key)
+        del(self._xforms[key])
+
+    def get_transform(self, key):
+        """
+        Returns the `Transformation.Transform` object associated with the shape which
+        has the given key in this collection. This object lives in the "global" (outer)
+        coordinate space.
+        """
+        return self._xforms[key]
+
+    def render(self, capabilities=[]):
+        paths = sum(s.render(capabilities) for s in self.itershapes())
+        return self._transformation.render_local(paths, capabilities)
+
+    def hittest(self, x, y):
+        """
+        Hittest simply delegates to all of the contained shapes. If any of them hit,
+        then the container hits.
+
+        The given point is in the parent ("global") coordinate space, but it will
+        be translated to the local coordinate space when doing the hittest on the
+        contained shapes, since those shapes operate entirely in the local coordinate
+        space.
+        """
+        x, y = self.transformation.to_local(geom.FixedPoint(x, y)).get_coords()
+        return super(TransformationGroup, self).hittest(x, y)
+
+    @property
+    def boundingbox(self):
+        return self._box
+
+    def boundingpoly(self, complexity=0.5):
+        #TODO: Can take the bounding poly from the super class (Group) and transform all the points.
+        return self._box
+
+    class Box(UnionBox):
+        def __init__(self, xform):
+            self._xform = xform
+
+        def iterboxes(self):
+            #FIXME: itershapes needs to iterate over the transformed shapes. Transformed shapes need to convert points, angles, and lengths.
+            return (s.boundingbox for s in self._xform.itershapes())
+
+
 class Translation(Transformation):
     def __init__(self, dx=0, dy=0):
         super(Translation, self).__init__()
         self._dx = geom.Float.cast(dx)
         self._dy = geom.Float.cast(dy)
+        self._ndx = geom.Negative(self._dx)
+        self._ndy = geom.Negative(self._dy)
     
     def length_to_global(self, length):
+        return length
+    
+    def length_to_local(self, length):
         return length
 
     def point_to_global(self, pt):
         return pt.translate(self._dx, self._dy)
 
-    @abc.abstractmethod
+    def point_to_local(self, pt):
+        return pt.translate(self._ndx, self._ndy)
+
     def render_local(self, paths, capabilities=[]):
         return [Path().translation(self._dx, self._dy, paths)]
 
