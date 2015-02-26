@@ -355,7 +355,10 @@ class Shape(object):
     def __str__(self):
         if self._title:
             return self._title
-        return repr(self)
+        return self.describe()
+
+    def describe(self):
+        return type(self).__name__
 
     @abc.abstractmethod
     def hittest(self, x, y):
@@ -1110,7 +1113,6 @@ class Circle(PaintableShape):
         self._diameter = geom.ProductLength(self._radius, 2.0)
         self._circumference = geom.ProductLength(self._radius, TAU)
         self._area = geom.ProductLength(self._radius, self._radius, math.pi)
-
 
     @ShapeMeta.point('c')
     def center(self):
