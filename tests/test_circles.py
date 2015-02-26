@@ -169,7 +169,21 @@ def test_bbox():
     c = Circle((3,4), 7)
     uut = c.boundingbox
     area = uut.area
+    w = uut.lengths.width
+    h = uut.lengths.height
+    LL = uut.points.ll
+    UL = uut.points.ul
+    LR = uut.points.lr
+    UR = uut.points.ur
 
     eq_(uut.get_area(), 14*14)
-    eq_(float(area), uut.get_area())
+    eq_(uut.get_area(), float(area))
+    eq_(uut.get_width(), 14)
+    eq_(uut.get_width(), float(w))
+    eq_(uut.get_height(), 14)
+    eq_(uut.get_height(), float(h))
+    eq_(LL.get_coords(), (-4, -3))
+    eq_(UL.get_coords(), (-4, 11))
+    eq_(LR.get_coords(), (10, -3))
+    eq_(UR.get_coords(), (10, 11))
 
