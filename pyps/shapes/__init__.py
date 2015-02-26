@@ -107,6 +107,37 @@ class Path(Paintable):
     def circle(self, center, radius):
         return self._add('C', center.get_x(), center.get_y(), float(radius))
 
+    def translation(self, dx, dy, paths):
+        """
+        Applies a translation by (+dx, +dy) to all of the specified ``paths``.
+        """
+        dx = geom.Float.cast(dx, 'Dx of translation must be a float: %r' % (dx,))
+        dy = geom.Float.cast(dy, 'Dy of translation must be a float: %r' % (dy,))
+        return self._add('xfT', dx, dy, paths)
+        #return self.transformation(1, 0, dx, 0, 1, dx, 0, 0, 1, paths)
+
+    def rotation(self, theta, paths):
+        """
+        Applies a rotation of ``theta`` degrees counterclockwise about the origin to the given paths.
+        """
+        theta = geom.Angle.cast(dx, 'Theta of rotation must be an angle: %r' % (theta,))
+        return self._add('xfR', theta, paths)
+        #Matrix is [cos, sin, 0; -sin, cos, 0; 0, 0, 1]
+
+    def scale(self, scale, paths):
+        """
+        Applies the specified square scale factor to the given paths.
+        """
+        scale = geom.Float.cast(scale, 'Scale for a scale must be a float: %r' % (scale,))
+        return self._add('xfS', scale, paths)
+        #Matrix is [s, 0, 0; 0, s, 0; 0, 0, 1]
+
+    def transformation(self, x1, x2, x3, y1, y2, y3, c1, c2, c3, paths):
+        """
+        Applies a 3x3 transformation matrix to the given paths.
+        """
+        return self._add('xf', x1, x2, x3, y1, y2, y3, c1, c2, c3, paths)
+
     #def curveTo(self, end, cp1, cp2):
     #    #curveto
     #
@@ -231,6 +262,7 @@ class ShapeMeta(abc.ABCMeta):
             return func(self)
 
         #FIXME: This isn't working real well, but it's a start. US-SHP16 will help.
+        get_point.__doc__ = get_point.__doc__ or ''
         if _pointkeys:
             get_point.__doc__ += '\n\nThis class provides the following labaled points:\n\n'
             for k in _pointkeys:
@@ -264,6 +296,7 @@ class ShapeMeta(abc.ABCMeta):
                 return super(_class, self).get_length(key)
             return func(self)
 
+        get_length.__doc__ = get_point.__doc__ or ''
         if _lengthkeys:
             get_length.__doc__ += '\n\nThis class provides the following labaled lengths:\n\n'
             for k in _lengthkeys:
@@ -531,6 +564,7 @@ class Box(Shape):
         self._diagonal = self._Diagonal(self)
 
     def render(self, capabilities=[]):
+        #FIXME: This is wrong, these aren't static methods.
         return [
             Path.moveTo(self.lowerleft),
             Path.lineTo(self.upperleft),
