@@ -796,6 +796,7 @@ class Circle(PaintableShape):
         self._west = geom.Translated(self._center, dx=nrad)
         self._diameter = geom.ProductLength(self._radius, 2.0)
         self._circumference = geom.ProductLength(self._radius, TAU)
+        self._area = geom.ProductLength(self._radius, self._radius, math.pi)
 
         super(Circle, self).__init__(**kwargs)
 
@@ -879,9 +880,19 @@ class Circle(PaintableShape):
         """
         return float(self._circumference)
 
+    @property
+    def area(self):
+        """
+        A `~pyps.geom.Float` representing the area of the circle, which is
+        pi times the square of the radius.
+        """
+        return self._area
+
     def get_area(self):
-        r = self.get_radius()
-        return math.pi * r * r
+        """
+        Returns the current area of the circle, as a float.
+        """
+        return float(self._area)
 
     def hittest(self, x, y):
         cx, cy = self.center.get_coords()
@@ -899,6 +910,9 @@ class Circle(PaintableShape):
         return [Path(paint=self).circle(self._center, self._radius)]
 
     class BBox(Box):
+        """
+        Implements the `~Circle.boundingbox` for a `Circle`.
+        """
         def __init__(self, circle):
             self._circle = circle
             super(Circle.BBox, self).__init__()
