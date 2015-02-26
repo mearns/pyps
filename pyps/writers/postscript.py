@@ -18,7 +18,7 @@ class EPSWriter(Writer):
         if not isinstance(path, Path):
             raise TypeError('Render returned non-Path: %r' % (path,))
 
-        ps = ''
+        ps = 'newpath '
         ps += '\n '.join(self._render_path_component(comp) for comp in path)
 
         fill = path.get_fill()
@@ -51,6 +51,13 @@ class EPSWriter(Writer):
                 return '%s %s %s 0 360 arc' % (cx, cy, r)
             elif command == 'X':
                 return 'closepath'
+            elif command == 'xfT':
+                dx, dy, subpaths = comp[1:]
+                return (
+                    ('gsave %s %s translate\n' % (dx, dy))
+                    + '\n'.join('    %s' % self.render_path(p) for p in subpaths)
+                    + '\n    grestore'
+                )
             else:
                 raise ValueError('Unknown path component command: %r' % (command,))
                 
@@ -67,7 +74,7 @@ class EPSWriter(Writer):
         for shape in document.itershapes():
             if verbose:
                 ostream.write("%% Shape: %s\n" % str(shape))
-            ostream.write("\n".join(('newpath %s' % self.render_path(p)) for p in shape.render()))
+            ostream.write("\n".join(self.render_path(p) for p in shape.render()))
             ostream.write("\n\n")
 
         ostream.write(r"""

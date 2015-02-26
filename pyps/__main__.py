@@ -8,17 +8,20 @@ if __name__ == '__main__':
     
     import pyps
     from pyps.shapes import *
+    from pyps.writers.postscript import EPSWriter
+    import subprocess
+
+    doc = pyps.Document()
+    c = Circle((100, 200), 50)
+
+    doc.add_shape(c)
 
 
-    c = Circle((5, 7), 3)
-    print c.points['c']
-    print c.points.c
-    print c.points['center']
-    print c.lengths.radius
-    print list(c.lengths)
+    writer = EPSWriter()
+    ofile = 'test_output.eps'
+    with open(ofile, 'wb') as ostream:
+        writer.write(ostream, doc, True)
 
-    box = c.boundingbox()
-    print box.points.keys()
-    print list(box.point_keys_iter())
 
+    subprocess.check_call(['convert', ofile, 'test_output.png'])
 
