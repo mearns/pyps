@@ -820,6 +820,23 @@ class Circle(PaintableShape):
         """
         return self._south
 
+    @ShapeMeta.point('e', 'right', 'r')
+    def east(self):
+        """
+        The `Point` representing the eastern-most point of the circle, which
+        is the point with the greatest X coordinate value.
+        """
+        return self._east
+
+    @ShapeMeta.point('w', 'left', 'l')
+    def west(self):
+        """
+        The `Point` representing the western-most point of the circle, which
+        is the point with the minimum X coordinate value.
+        """
+        return self._west
+
+
     @ShapeMeta.length('r')
     def radius(self):
         """

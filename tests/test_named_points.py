@@ -13,13 +13,15 @@ def test_circle():
         center = ['c'],
         north = ['n', 'up', 'u'],
         south = ['s', 'down', 'd'],
-        #east = ['e', 'right', 'r'],
-        #west = ['w', 'left', 'l'],
+        east = ['e', 'right', 'r'],
+        west = ['w', 'left', 'l'],
     )
 
     ok_(c.points['center'].is_at(3, 4))
     ok_(c.points['north'].is_at(3, 11))
     ok_(c.points['south'].is_at(3, -3))
+    ok_(c.points['east'].is_at(10, 4))
+    ok_(c.points['west'].is_at(-4, 4))
 
     #Make sure the set of keys contains all of the expected keys.
     ok_(set(expected_names.keys()) <= set(c.points.keys()), c.points.keys())
