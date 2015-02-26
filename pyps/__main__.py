@@ -12,7 +12,9 @@ if __name__ == '__main__':
 
     c = Circle((5, 7), 3)
     print c.points['c']
+    print c.points.c
     print c.points['center']
+    print c.lengths.radius
     print list(c.lengths)
 
     box = c.boundingbox()

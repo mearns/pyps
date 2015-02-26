@@ -407,7 +407,14 @@ class Shape(object):
         """
         return self.__lengths_view
 
-    class PointView(collections.Mapping):
+    class _MappingView(collections.Mapping):
+        def __getattr__(self, name):
+            try:
+                return self.__getitem__(name)
+            except KeyError:
+                raise AttributeError('No such attribute: %s' % (name,))
+
+    class PointView(_MappingView):
         """
         A simple utility class that provides a read-only mapping view of the labeled points of a shape,
         as with `get_point`.
@@ -424,7 +431,7 @@ class Shape(object):
         def __getitem__(self, key):
             return self.__shape.get_point(key)
 
-    class LengthView(collections.Mapping):
+    class LengthView(_MappingView):
         """
         A simple utility class that provides a read-only mapping view of the labeled lengths of a shape,
         as with `get_length`.
