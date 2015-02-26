@@ -524,6 +524,8 @@ class Box(Shape):
         self._height = self._Height(self)
         self._area = self._Area(self)
         self._center = self._Center(self)
+        self._perimeter = self._Perimeter(self)
+        self._diagonal = self._Diagonal(self)
         super(Box, self).__init__()
 
     def render(self, capabilities=[]):
@@ -588,6 +590,21 @@ class Box(Shape):
         """
         return self._height
 
+    @ShapeMeta.length('d', 'diag')
+    def diagonal(self):
+        """
+        A dynamic `~geom.Length` representing the length of either diagonal of the box.
+        """
+        return self._diagonal
+
+    @ShapeMeta.length('perim')
+    def perimeter(self):
+        """
+        A dynamic `~geom.Length` representing the perimeter of the box.
+        """
+        return self._perimeter
+
+
     @abc.abstractmethod
     def get_bounds(self):
         """
@@ -642,6 +659,22 @@ class Box(Shape):
         n, e, s, w = self.get_bounds()
         return n - s
 
+    def get_diagonal(self):
+        """
+        Returns the current length of either of the two diagonals of the box.
+        """
+        w = self.get_width()
+        h = self.get_height()
+        return math.sqrt(w*w + h*h)
+
+    def get_perimeter(self):
+        """
+        Returns the current perimeter of the box.
+        """
+        w = self.get_width()
+        h = self.get_height()
+        return w + w + h + h
+
     def get_area(self):
         """
         Returns the current area of the box, the product of the `width <get_width>`
@@ -684,6 +717,14 @@ class Box(Shape):
     class _Height(_Length):
         def get_float(self):
             return self._box.get_height()
+
+    class _Diagonal(_Length):
+        def get_float(self):
+            return self._box.get_diagonal()
+
+    class _Perimeter(_Length):
+        def get_float(self):
+            return self._box.get_perimeter()
 
     class _Area(_Length):
         def get_float(self):
@@ -978,6 +1019,11 @@ class Circle(PaintableShape):
         def __init__(self, circle):
             self._circle = circle
             super(Circle.BBox, self).__init__()
+
+        @ShapeMeta.point('c')
+        def center(self):
+            #We can do this more efficiently than the standard way.
+            return self._circle._center
 
         def get_bounds(self):
             r = self._circle.get_radius()

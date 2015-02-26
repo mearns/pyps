@@ -171,6 +171,8 @@ def test_bbox():
     area = uut.area
     w = uut.lengths.width
     h = uut.lengths.height
+    diag = uut.lengths.diagonal
+    perim = uut.lengths.perimeter
     LL = uut.points.ll
     UL = uut.points.ul
     LR = uut.points.lr
@@ -183,6 +185,10 @@ def test_bbox():
     eq_(uut.get_width(), float(w))
     eq_(uut.get_height(), 14)
     eq_(uut.get_height(), float(h))
+    eq_(uut.get_diagonal(), math.sqrt(14*14 + 14*14))
+    eq_(uut.get_diagonal(), float(diag))
+    eq_(uut.get_perimeter(), 4*14)
+    eq_(uut.get_perimeter(), float(perim))
     eq_(LL.get_coords(), (-4, -3))
     eq_(UL.get_coords(), (-4, 11))
     eq_(LR.get_coords(), (10, -3))
