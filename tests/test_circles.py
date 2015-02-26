@@ -49,6 +49,25 @@ def test_lengths():
             eq_(alength, getattr(c.lengths, alias))
 
 
+def test_pt_move():
+    center = Point.cast((3, 4))
+    uut = Circle(center, 7)
+
+    ok_(uut.points['center'] is center)
+
+    ok_(uut.points['center'].is_at(3, 4))
+    ok_(uut.points['north'].is_at(3, 11))
+    ok_(uut.points['south'].is_at(3, -3))
+    ok_(uut.points['east'].is_at(10, 4))
+    ok_(uut.points['west'].is_at(-4, 4))
+
+    center.moveTo(9, 5)
+    ok_(uut.points['center'] is center)
+    ok_(uut.points['center'].is_at(9, 5))
+    ok_(uut.points['north'].is_at(9, 12), str(uut.points['north']))
+    ok_(uut.points['south'].is_at(9, -2))
+    ok_(uut.points['east'].is_at(16, 5))
+    ok_(uut.points['west'].is_at(2, 5))
 
 def test_points():
     c = Circle((3, 4), 7)

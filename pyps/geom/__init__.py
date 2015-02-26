@@ -63,17 +63,23 @@ class Float(object):
 
 class FixedFloat(Float):
     """
-    A `Float` object with a fixed value.
+    A `Float` object with a static value.
     """
     def __init__(self, value):
         """
         :param value:   Anything castable to with `~python.float` giving the
             fixed value of this object.
         """
-        self._float_value = float(value)
+        self.set(value)
 
     def get_float(self):
         return self._float_value
+
+    def set(self, val):
+        """
+        Sets the value of the float, casting the given ``val`` to a `~python.float`.
+        """
+        self._float_value = float(val)
 
     @docit
     def __cmp__(self, other):
@@ -629,11 +635,8 @@ class FixedPoint(Point):
     """
 
     def __init__(self, x, y):
-        #This is the correct order of calls: we want the `x` an `y` properties
-        # to return `Float` instances, but the internal cast to `float` will ensure
-        # they are static values.
-        self.__x = Float.cast(float(x))
-        self.__y = Float.cast(float(y))
+        self.__x = FixedFloat(x)
+        self.__y = FixedFloat(y)
 
     @property
     def x(self):
@@ -642,6 +645,32 @@ class FixedPoint(Point):
     @property
     def y(self):
         return self.__y
+
+    def moveTo(self, x=None, y=None):
+        """
+        Changes the coordinates of this point to those given.
+
+        Values are always resolved immediately as floats, this is not the way to create a dynamic
+        point.
+
+        :param x:   Optional, the value of the X coordinate to move to, or |None|
+            to leave the X coordinate alone. Default is ``None``.
+        :param y:   Optional, the value of the Y coordinate to move to, or |None|
+            to leave the Y coordinate alone. Default is ``None``.
+        """
+        if x is not None:
+            self.__x.set(x)
+        if y is not None:
+            self.__y.set(y)
+
+    def move(self, dx=None, dy=None):
+        """
+        Like `moveTo`, except the move is relative to the current location.
+        """
+        if dx is not None:
+            self.__x.set(float(dx) + float(self.__x))
+        if dy is not None:
+            self.__y.set(float(dy) + float(self.__y))
 
 
 class Translated(Point):
@@ -659,8 +688,10 @@ class Translated(Point):
             Default is 0.
         """
         self._pt = Point.cast(pt)
-        self._x = Sum(self._pt.x, dx)
-        self._y = Sum(self._pt.y, dy)
+        self._dx = Float.cast(dx)
+        self._dy = Float.cast(dy)
+        self._x = Sum(self._pt.x, self._dx)
+        self._y = Sum(self._pt.y, self._dy)
 
     @property
     def x(self):
@@ -672,11 +703,11 @@ class Translated(Point):
 
     @docit
     def __str__(self):
-        return '(%s + (%s,%s))' % (self._pt, self._x, self._y)
+        return '(%s + (%s,%s))' % (self._pt, self._dx, self._dy)
 
     @docit
     def __repr__(self):
-        return '%s(%r, %r, %r)' % (self._pt, self._x, self._y)
+        return '%s(%r, %r, %r)' % (type(self).__name__, self._pt, self._dx, self._dy)
 
 class Dilated(Point):
     def __init__(self, pt, scale, origin=0):
