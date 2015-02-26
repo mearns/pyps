@@ -164,6 +164,9 @@ class TransformationGroup(Group):
         x, y = self.transformation.to_local(geom.FixedPoint(x, y)).get_coords()
         return super(TransformationGroup, self).hittest(x, y)
 
+    def itertransforms(self):
+        return (self.get_transform(k) for k in self)
+
     @property
     def boundingbox(self):
         return self._box
@@ -179,7 +182,7 @@ class TransformationGroup(Group):
 
         def iterboxes(self):
             #FIXME: itershapes needs to iterate over the transformed shapes. Transformed shapes need to convert points, angles, and lengths.
-            return (s.boundingbox for s in self._xform.itershapes())
+            return (s.boundingbox for s in self._xform.itertransforms())
 
 
 class Translation(Transformation):

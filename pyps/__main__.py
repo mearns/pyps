@@ -19,7 +19,6 @@ if __name__ == '__main__':
     g = TransformationGroup(xf, c)
 
     doc.add_shape(Painted(c.boundingbox, fill=(1, 0, 0)))
-    #XXX: FIXME: This is wrong, it's showing up behind c, instead of g.
     doc.add_shape(Painted(g.boundingbox, fill=(1, 1, 0)))
     doc.add_shape(g)
     doc.add_shape(c)
