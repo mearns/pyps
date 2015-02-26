@@ -244,7 +244,7 @@ class ShapeMeta(abc.ABCMeta):
             """
             Iterator over all the canonical keys that can be accepted by `get_point`.
             """
-            #TODO: If there are duplicates, this won't be right.
+            #FIXME: If there are duplicates, this won't be right.
             return CompoundIterator(_pointkeys, super(_class, self).point_keys_iter())
 
         @method
@@ -278,7 +278,7 @@ class ShapeMeta(abc.ABCMeta):
             """
             Return a sequence of all the canonical keys that can be accepted by `get_length`.
             """
-            #TODO: If there are duplicates, this won't be right.
+            #FIXME: If there are duplicates, this won't be right.
             return CompoundIterator(_lengthkeys, super(_class, self).length_keys_iter())
 
         _class = super(ShapeMeta, meta).__new__(meta, name, bases, dct)
@@ -380,7 +380,7 @@ class Shape(object):
 
         :rtype: `Polygon`.
         """
-        #FIXME XXX: Box will need to extend some kind of Polygon class.
+        #TODO XXX: Box will need to extend some kind of Polygon class.
         return self.boundingbox()
 
     @abc.abstractmethod
@@ -520,6 +520,9 @@ class Box(Shape):
         self._lowerright = self._LowerRightCorner(self)
         self._upperleft = self._UpperLeftCorner(self)
         self._upperright = self._UpperRightCorner(self)
+        self._width = self._Width(self)
+        self._height = self._Height(self)
+        self._area = self._Area(self)
         super(Box, self).__init__()
 
     def render(self, capabilities=[]):
@@ -531,7 +534,7 @@ class Box(Shape):
             Path.close(),
         ]
 
-    @ShapeMeta.point()
+    @ShapeMeta.point('ll', 'bl')
     def lowerleft(self):
         """
         Returns a dynamic point which represents the lower left corner of the box
@@ -539,7 +542,7 @@ class Box(Shape):
         """
         return self._lowerleft
 
-    @ShapeMeta.point()
+    @ShapeMeta.point('lr', 'br')
     def lowerright(self):
         """
         Returns a dynamic point which represents the lower right corner of the box
@@ -547,7 +550,7 @@ class Box(Shape):
         """
         return self._lowerright
 
-    @ShapeMeta.point()
+    @ShapeMeta.point('ul', 'tl')
     def upperleft(self):
         """
         Returns a dynamic point which represents the upper left corner of the box
@@ -555,13 +558,27 @@ class Box(Shape):
         """
         return self._upperleft
 
-    @ShapeMeta.point()
+    @ShapeMeta.point('ur', 'tr')
     def upperright(self):
         """
         Returns a dynamic point which represents the upper right corner of the box
         (maximum X and maximum Y).
         """
         return self._upperright
+
+    @ShapeMeta.length('w')
+    def width(self):
+        """
+        A dynamic `~geom.Length` representing the width of the box (horizontal extent).
+        """
+        return self._width
+
+    @ShapeMeta.length('h')
+    def height(self):
+        """
+        A dynamic `~geom.Length` representing the height of the box (vertical extent).
+        """
+        return self._height
 
     @abc.abstractmethod
     def get_bounds(self):
@@ -624,6 +641,13 @@ class Box(Shape):
         """
         return self.get_width() * self.get_height()
 
+    @property
+    def area(self):
+        """
+        A dynamic `~geom.Length` object representing the area of the box.
+        """
+        return self._area
+
     def hittest(self, x, y):
         n, e, s, w = self.get_bounds()
         return (w <= x <= e) and (s <= y <= n)
@@ -640,6 +664,22 @@ class Box(Shape):
         The bounding poly for a box is always itself.
         """
         return self
+
+    class _Length(geom.Length):
+        def __init__(self, box):
+            self._box = box
+
+    class _Width(_Length):
+        def get_float(self):
+            return self._box.get_width()
+
+    class _Height(_Length):
+        def get_float(self):
+            return self._box.get_height()
+
+    class _Area(_Length):
+        def get_float(self):
+            return self._box.get_area()
 
     class _Corner(geom.Point):
         """
@@ -895,12 +935,13 @@ class Circle(PaintableShape):
         return float(self._area)
 
     def hittest(self, x, y):
-        cx, cy = self.center.get_coords()
+        cx, cy = self._center.get_coords()
         r = self.get_radius()
         dx = cx - x
         dy = cy - y
         return (dx*dx + dy*dy) <= (r * r)
 
+    @property
     def boundingbox(self):
         return self._bbox
 
@@ -919,6 +960,6 @@ class Circle(PaintableShape):
 
         def get_bounds(self):
             r = self._circle.get_radius()
-            x, y = self._circle.center.get_coords()
+            x, y = self._circle._center.get_coords()
             return (y+r, x+r, y-r, x-r)
 

@@ -163,3 +163,13 @@ def test_points():
             ok_(hasattr(c.points, alias))
             eq_(apt, getattr(c.points, alias))
 
+
+def test_bbox():
+
+    c = Circle((3,4), 7)
+    uut = c.boundingbox
+    area = uut.area
+
+    eq_(uut.get_area(), 14*14)
+    eq_(float(area), uut.get_area())
+
