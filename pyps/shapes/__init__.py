@@ -200,7 +200,7 @@ class ShapeMeta(abc.ABCMeta):
                 _lengthkeys.append(k)
                 labels.extend(v.labels)
                 for label in labels:
-                    if label in points:
+                    if label in lengths:
                         raise KeyError('Duplicate labeled length: %s' % (label,))
                     lengths[label] = v.func
                 remove.add(k)
@@ -794,6 +794,8 @@ class Circle(PaintableShape):
         self._south = geom.Translated(self._center, dy=nrad)
         self._east = geom.Translated(self._center, dx=self._radius)
         self._west = geom.Translated(self._center, dx=nrad)
+        self._diameter = geom.ProductLength(self._radius, 2.0)
+        self._circumference = geom.ProductLength(self._radius, TAU)
 
         super(Circle, self).__init__(**kwargs)
 
@@ -836,13 +838,28 @@ class Circle(PaintableShape):
         """
         return self._west
 
-
     @ShapeMeta.length('r')
     def radius(self):
         """
         A `~pyps.geom.Length` representing the radius of the circle.
         """
         return self._radius
+
+    @ShapeMeta.length('d', 'diam')
+    def diameter(self):
+        """
+        A `~pyps.geom.Length` representing the diameter of the circle, which
+        is twice the radius.
+        """
+        return self._diameter
+
+    @ShapeMeta.length('c', 'circum', 'perimeter', 'perim')
+    def circumference(self):
+        """
+        A `~pyps.geom.Length` representing the circumference of the circle,
+        which is equal to 2*pi times the radius.
+        """
+        return self._circumference
 
     def get_radius(self):
         """
@@ -851,10 +868,16 @@ class Circle(PaintableShape):
         return float(self._radius)
 
     def get_diameter(self):
-        return self.get_radius() * 2.0
+        """
+        Returns the current diameter of the circle, as a float.
+        """
+        return float(self._diameter)
 
     def get_circumference(self):
-        return self.get_radius() * TAU
+        """
+        Returns the current circumeference of the circle, as a float.
+        """
+        return float(self._circumference)
 
     def get_area(self):
         r = self.get_radius()
