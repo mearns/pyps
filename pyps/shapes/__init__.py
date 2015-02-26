@@ -523,6 +523,7 @@ class Box(Shape):
         self._width = self._Width(self)
         self._height = self._Height(self)
         self._area = self._Area(self)
+        self._center = self._Center(self)
         super(Box, self).__init__()
 
     def render(self, capabilities=[]):
@@ -533,6 +534,13 @@ class Box(Shape):
             Path.lineTo(self.lowerright),
             Path.close(),
         ]
+
+    @ShapeMeta.point('c')
+    def center(self):
+        """
+        A dynamic point representing the center of the box.
+        """
+        return self._center
 
     @ShapeMeta.point('ll', 'bl')
     def lowerleft(self):
@@ -727,6 +735,19 @@ class Box(Shape):
         class _Y(_Float):
             def get_float(self):
                 return self._corner.get_y()
+
+    class _Center(_Corner):
+        def get_x(self):
+            n, e, s, w = self._box.get_bounds()
+            return (e + w)*0.5
+
+        def get_y(self):
+            n, e, s, w = self._box.get_bounds()
+            return (n + s)*0.5
+
+        def get_coords(self):
+            n, e, s, w = self._box.get_bounds()
+            return ((e+w)*0.5, (n+s)*0.5)
 
     class _LeftCorner(_Corner):
         def get_x(self):

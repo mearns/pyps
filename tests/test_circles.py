@@ -175,6 +175,7 @@ def test_bbox():
     UL = uut.points.ul
     LR = uut.points.lr
     UR = uut.points.ur
+    center = uut.points.c
 
     eq_(uut.get_area(), 14*14)
     eq_(uut.get_area(), float(area))
@@ -186,4 +187,5 @@ def test_bbox():
     eq_(UL.get_coords(), (-4, 11))
     eq_(LR.get_coords(), (10, -3))
     eq_(UR.get_coords(), (10, 11))
+    eq_(center.get_coords(), (3, 4), uut.get_bounds())
 
