@@ -4,11 +4,19 @@
 from pyps import geom
 from pyps.shapes import Shape, UnionBox
 
+from docit import *
+
 import types
 import abc
 import collections
 
-class Transform(Shape, collections.MutableMapping):
+class Transformation(Shape, collections.MutableMapping):
+    """
+    This is the base class for transformations. Each object acts as a container
+    for any number of `~pyps.shapes.Shape` objects and acts as a local coordinate system
+    for the contained shapes, which is transformed relative to the coordinate system
+    of the container itself.
+    """
 
     def __init__(self, *shapes, **keyed_shapes):
         self._box = self.Box(self)
@@ -60,31 +68,58 @@ class Transform(Shape, collections.MutableMapping):
 
         return key
 
+    @docit
     def __setitem__(self, key, value):
         """
         Delegate to `add_shape`.
         """
         self.add_shape(value, key)
 
+    @docit
     def __delitem__(self, key):
         """
         Removes the item with the specified key from the collection.
         """
         del(self.__shapes[key])
 
+    @docit
     def __len__(self):
+        """
+        The number of contained shapes.
+        """
         return len(self.__shapes)
 
+    @docit
     def __iter__(self):
+        """
+        Iterates over the keys for all contained shapes.
+        """
         return iter(self.__shapes)
 
+    @docit
     def __getitem__(self, key):
+        """
+        Retreive a contained shape by its key.
+        """
         return self.__shapes[key]
 
     def itershapes(self):
+        """
+        Iterate over the contained `~pyps.shape.Shape` objects themselves.
+        """
         return self.__shapes.itervalues()
 
     def hittest(self, x, y):
+        """
+        Hittest simply delegates to all of the contained shapes. If any of them hit,
+        then the container hits.
+
+        The given point is in the parent ("global") coordinate space, but it will
+        be translated to the local coordinate space when doing the hittest on the
+        contained shapes, since those shapes operate entirely in the local coordinate
+        space.
+        """
+        x, y = self.to_local(geom.FixedPoint(x, y)).get_coords()
         for shape in self.itershapes():
             if shape.hittest(x,y):
                 return True

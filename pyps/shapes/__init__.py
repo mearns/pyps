@@ -518,6 +518,7 @@ class Box(Shape):
     """
 
     def __init__(self):
+        super(Box, self).__init__()
         self._lowerleft = self._LowerLeftCorner(self)
         self._lowerright = self._LowerRightCorner(self)
         self._upperleft = self._UpperLeftCorner(self)
@@ -528,7 +529,6 @@ class Box(Shape):
         self._center = self._Center(self)
         self._perimeter = self._Perimeter(self)
         self._diagonal = self._Diagonal(self)
-        super(Box, self).__init__()
 
     def render(self, capabilities=[]):
         return [
@@ -622,24 +622,32 @@ class Box(Shape):
     def get_north(self):
         """
         Returns the maximum Y coordinate of the box, based on `get_bounds`.
+
+        Implemented based on `get_bounds`.
         """
         return self.get_bounds()[0]
 
     def get_south(self):
         """
         Returns the minimum Y coordinate of the box, based on `get_bounds`.
+
+        Implemented based on `get_bounds`.
         """
         return self.get_bounds()[2]
 
     def get_east(self):
         """
         Returns the maximum X coordinate of the box, based on `get_bounds`.
+
+        Implemented based on `get_bounds`.
         """
         return self.get_bounds()[1]
 
     def get_west(self):
         """
         Returns the minimum X coordinate of the box, based on `get_bounds`.
+
+        Implemented based on `get_bounds`.
         """
         return self.get_bounds()[3]
 
@@ -664,6 +672,8 @@ class Box(Shape):
     def get_diagonal(self):
         """
         Returns the current length of either of the two diagonals of the box.
+
+        Implemented based on `get_width` and `get_height`.
         """
         w = self.get_width()
         h = self.get_height()
@@ -672,6 +682,8 @@ class Box(Shape):
     def get_perimeter(self):
         """
         Returns the current perimeter of the box.
+
+        Implemented bsaed on `get_width` and `get_height`.
         """
         w = self.get_width()
         h = self.get_height()
@@ -679,8 +691,9 @@ class Box(Shape):
 
     def get_area(self):
         """
-        Returns the current area of the box, the product of the `width <get_width>`
-        and the `height <get_height>`.
+        Returns the current area of the box.
+
+        Implemented bsaed on `get_width` and `get_height`.
         """
         return self.get_width() * self.get_height()
 
@@ -692,6 +705,9 @@ class Box(Shape):
         return self._area
 
     def hittest(self, x, y):
+        """
+        Implemented based easily enough on `get_bound`.
+        """
         n, e, s, w = self.get_bounds()
         return (w <= x <= e) and (s <= y <= n)
 
@@ -831,7 +847,7 @@ class UnionBox(Box):
         raise NotImplementedError()
 
     def get_bounds(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         ns = [b[0] for b in bounds]
@@ -840,36 +856,39 @@ class UnionBox(Box):
         ws = [b[3] for b in bounds]
         return (max(ns), max(es), min(ss), min(ws))
 
+    #These are overridden because we can be slightly more efficient than
+    # trying to get all the bounds when they aren't needed.
+
     def get_north(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         vals = [b[0] for b in bounds]
         return max(vals)
 
     def get_south(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         vals = [b[2] for b in bounds]
         return min(vals)
         
     def get_east(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         vals = [b[1] for b in bounds]
         return max(vals)
         
     def get_west(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         vals = [b[3] for b in bounds]
         return min(vals)
 
     def get_width(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         east = max([b[1] for b in bounds])
@@ -877,14 +896,178 @@ class UnionBox(Box):
         return east - west
 
     def get_height(self):
-        bounds = [o.get_bounds() for o in self._others]
+        bounds = [o.get_bounds() for o in self.iterboxes()]
         if not bounds:
             raise ValueError('Cannot have a union of no boxes.')
         north = max([b[0] for b in bounds])
         south = min([b[2] for b in bounds])
         return north - south
 
+class Union(Shape):
+    """
+    A fixed container over multiple `Shape` objects, which itself acts as a `Shape`.
 
+    This is an abstract class, concrete subclasses must implement `itershapes`
+    to indicate the contained shapes.
+    """
+
+    def __init__(self):
+        self._bbox = self.Box(self)
+        super(Union, self).__init__()
+
+    def render(self):
+        return sum(s.render() for s in self.itershapes)
+        
+    @abc.abstractmethod
+    def itershapes(self):
+        """
+        Returns an iterator over all the contained shapes.
+        """
+        raise NotImplementedError()
+
+    def hittest(self, x, y):
+        """
+        Hittest simply delegates to all of the contained shapes. If any of them hit,
+        then the container hits.
+        """
+        for shape in self.itershapes():
+            if shape.hittest(x,y):
+                return True
+        return False
+
+    @property
+    def boundingbox(self):
+        """
+        Bounding box is a `UnionBox` of the bounding boxes of all contained shapes.
+        """
+        return self._bbox
+
+    #TODO: For bounding poly, we could do a convex hull of the bounding boxes.
+
+    class Box(UnionBox):
+        def __init__(self, union):
+            super(Union.Box, self).__init__()
+            self._union = union
+
+        def iterboxes(self):
+            return (s.boundingbox for s in self._union.itershapes())
+        
+
+class Group(Union, collections.MutableMapping):
+    """
+    Represents a container for any number of `~pyps.shapes.Shape` objects and acts as a
+    local coordinate system
+    for the contained shapes, which is transformed relative to the coordinate system
+    of the container itself.
+    """
+
+    def __init__(self, *shapes, **keyed_shapes):
+        self._box = self.Box(self)
+        self.__shapes = {}
+        self.add(*shapes, **keyed_shapes)
+
+    def add(self, *shapes, **keyed_shapes):
+        """
+        Adds multiple shapes to the collection, with or without keys.
+
+        Delegates to `add_shape`, but returns ``self`` for convenience.
+
+        :param \*shapes: Any positional arguments are passed to `add_shape` without
+            a ``key`` argument.
+
+        :param \*\*keyed_shapes:    Any keyword arguments are passed to `add_shape`,
+            using the keyword as the ``key``.
+
+        """
+        for shape in shapes:
+            self.add_shape(shape)
+        for k, v in keyed_shapes.iteritems():
+            self.add_shape(v, k)
+
+        return self
+
+    def add_shape(self, shape, key=None):
+        """
+        Adds a new shape to the collection. If a key is given, it must be a string
+        and can be used to retrieve the shape later. If a key is not given, a numeric
+        key will be generated for it.
+
+        In either case, the associated key is returned.
+
+        If you specify an existing key, you will get a |KeyError|. If you want to replace
+        an item, you need to delete the key from the collection first.
+        """
+        if not isinstance(shape, Shape):
+            raise TypeError('Can only add Shape objects: %r' % (shape,))
+        if key is None:
+            key = len(self.__shapes)
+        else:
+            if not isinstance(key, types.StringTypes):
+                raise TypeError('Key must be a string type: %r' % (key,))
+
+        if key in self.__shapes:
+            raise KeyError('Key already exists: %r' % (key,))
+        self.__shapes[key] = shape
+
+        return key
+
+    @docit
+    def __setitem__(self, key, value):
+        """
+        Delegate to `add_shape`.
+        """
+        self.add_shape(value, key)
+
+    @docit
+    def __delitem__(self, key):
+        """
+        Removes the item with the specified key from the collection.
+        """
+        del(self.__shapes[key])
+
+    @docit
+    def __len__(self):
+        """
+        The number of contained shapes.
+        """
+        return len(self.__shapes)
+
+    @docit
+    def __iter__(self):
+        """
+        Iterates over the keys for all contained shapes.
+        """
+        return iter(self.__shapes)
+
+    @docit
+    def __getitem__(self, key):
+        """
+        Retreive a contained shape by its key.
+        """
+        return self.__shapes[key]
+
+    def itershapes(self):
+        """
+        Iterate over the contained `~pyps.shape.Shape` objects themselves.
+        """
+        return self.__shapes.itervalues()
+
+
+    @abc.abstractmethod
+    def to_local(self, pt):
+        """
+        Returns a new `~pyps.geom.Point` object dynamically linked to the given ``pt``
+        which maps the given point from the parent into the local coordinate system.
+        """
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def to_global(self, pt):
+        """
+        Returns a new `~pyps.geom.Point` object dynamically linked to the given ``pt``
+        which maps the given point from the local into the parent coordinate system.
+        """
+        raise NotImplementedError()
 
 class Circle(PaintableShape):
 
