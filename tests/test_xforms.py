@@ -15,7 +15,7 @@ import os
 
 import pyps
 from pyps.shapes import Circle
-from pyps.shapes import xforms
+from pyps.shapes.xforms import Translation
 
 
 def _doc_to_img(doc):
@@ -54,5 +54,28 @@ def _test_docs_similar(doc1, doc2):
 
     ok_(img_compare.similar(im1, im2))
 
-def test_translation():
-    pass
+def test_translation_001():
+    c = Circle((0, 0), 1)
+    uut = Translation(4, 7)
+    xc = uut.transform(c)
+
+    eq_(float(c.lengths.radius), 1)
+    eq_(c.points.center.get_coords(), (0, 0))
+
+    eq_(float(xc.lengths.radius), 1)
+    eq_(xc.points.center.get_coords(), (4, 7))
+
+    #Move the original circle.
+    c.points.center.moveTo(8, -5)
+
+    eq_(float(c.lengths.radius), 1)
+    eq_(c.points.center.get_coords(), (8, -5))
+
+    eq_(float(xc.lengths.radius), 1)
+    eq_(xc.points.center.get_coords(), (12, 2))
+    eq_(xc.points.n.get_coords(), (12, 3))
+    eq_(xc.points.s.get_coords(), (12, 1))
+    eq_(xc.points.e.get_coords(), (13, 2))
+    eq_(xc.points.w.get_coords(), (11, 2))
+
+

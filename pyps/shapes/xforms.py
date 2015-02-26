@@ -42,7 +42,7 @@ class Transformation(object):
     def render_local(self, paths, capabilities=[]):
         raise NotImplementedError()
 
-    def xform(self, *shapes):
+    def transform(self, *shapes):
         shapes = [self.Transform(self, shape) for shape in shapes]
         if len(shapes) == 1:
             return shapes[0]
@@ -134,9 +134,9 @@ class Transformation(object):
                 xs = sorted([pt.get_x() for pt in points])
                 return ys[3], xs[3], ys[0], xs[0]
                 
-class TranslationGroup(Transformation):
+class Translation(Transformation):
     def __init__(self, dx=0, dy=0):
-        super(TranslationGroup, self).__init__()
+        super(Translation, self).__init__()
         self._dx = geom.Float.cast(dx)
         self._dy = geom.Float.cast(dy)
     
