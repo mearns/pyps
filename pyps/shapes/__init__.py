@@ -642,6 +642,9 @@ class Box(Shape):
         """
         def __init__(self, box):
             self._box = box
+            self._x = self._X(self)
+            self._y = self._Y(self)
+            super(Box._Corner, self).__init__()
 
         def get_coords(self):
             """
@@ -649,6 +652,14 @@ class Box(Shape):
             """
             return (self.get_x(), self.get_y())
 
+        @property
+        def x(self):
+            return self._x
+
+        @property
+        def y(self):
+            return self._y
+            
         @abc.abstractmethod
         def get_x(self):
             raise NotImplementedError()
@@ -657,26 +668,39 @@ class Box(Shape):
         def get_y(self):
             raise NotImplementedError()
 
-    class _LeftCorner(object):
+        class _Float(geom.Float):
+            def __init__(self, corner):
+                self._corner = corner
+                super(Box._Corner._Float, self).__init__()
+
+        class _X(_Float):
+            def get_float(self):
+                return self._corner.get_x()
+
+        class _Y(_Float):
+            def get_float(self):
+                return self._corner.get_y()
+
+    class _LeftCorner(_Corner):
         def get_x(self):
             return self._box.get_bounds()[3]
 
-    class _RightCorner(object):
+    class _RightCorner(_Corner):
         def get_x(self):
             return self._box.get_bounds()[1]
 
-    class _UpperCorner(object):
+    class _UpperCorner(_Corner):
         def get_y(self):
             return self._box.get_bounds()[0]
 
-    class _LowerCorner(object):
+    class _LowerCorner(_Corner):
         def get_y(self):
             return self._box.get_bounds()[2]
 
-    class _LowerLeftCorner(_Corner, _LeftCorner, _LowerCorner): pass
-    class _LowerRightCorner(_Corner, _RightCorner, _LowerCorner): pass
-    class _UpperLeftCorner(_Corner, _LeftCorner, _UpperCorner): pass
-    class _UpperRightCorner(_Corner, _RightCorner, _UpperCorner): pass
+    class _LowerLeftCorner(_LeftCorner, _LowerCorner): pass
+    class _LowerRightCorner(_RightCorner, _LowerCorner): pass
+    class _UpperLeftCorner(_LeftCorner, _UpperCorner): pass
+    class _UpperRightCorner(_RightCorner, _UpperCorner): pass
 
 
 
@@ -808,6 +832,7 @@ class Circle(PaintableShape):
     class BBox(Box):
         def __init__(self, circle):
             self._circle = circle
+            super(Circle.BBox, self).__init__()
 
         def get_bounds(self):
             r = self._circle.get_radius()

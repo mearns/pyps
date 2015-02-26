@@ -14,7 +14,7 @@ class Float(object):
     """
     Dynamic encapsulation of a floating point value.
 
-    Concrete subclasses must implement the `__float__` method to resolve
+    Concrete subclasses must implement the `get_float` method to resolve
     the value.
     """
 

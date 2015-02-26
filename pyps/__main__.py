@@ -16,7 +16,6 @@ if __name__ == '__main__':
     print list(c.lengths)
 
     box = c.boundingbox()
-    #FIXME: Failing.
     print box.points.keys()
     print list(box.point_keys_iter())
 
