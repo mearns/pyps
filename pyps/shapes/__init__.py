@@ -15,6 +15,8 @@ from pyps.art.color import Color
 
 
 TAU = 2.0 * math.pi
+RAD_TWO = math.sqrt(2.0)
+TWO_RAD_TWO = 2.0*RAD_TWO
 
 
 class Paintable(object):
@@ -887,6 +889,7 @@ class UnionBox(Box):
 class Circle(PaintableShape):
 
     def __init__(self, center, radius, **kwargs):
+        super(Circle, self).__init__(**kwargs)
         self._center = geom.Point.cast(center, "Center must be a point: %r" % (center,))
         self._radius = geom.Length.cast(radius, "Radius must be a length: %r" % (radius,))
         self._bbox = self.BBox(self)
@@ -900,7 +903,6 @@ class Circle(PaintableShape):
         self._circumference = geom.ProductLength(self._radius, TAU)
         self._area = geom.ProductLength(self._radius, self._radius, math.pi)
 
-        super(Circle, self).__init__(**kwargs)
 
     @ShapeMeta.point('c')
     def center(self):
@@ -1017,8 +1019,20 @@ class Circle(PaintableShape):
         Implements the `~Circle.boundingbox` for a `Circle`.
         """
         def __init__(self, circle):
-            self._circle = circle
             super(Circle.BBox, self).__init__()
+            self._circle = circle
+            self._diagonal = geom.ProductLength(TWO_RAD_TWO, circle.lengths['radius'])
+
+        @ShapeMeta.length('d', 'diag')
+        def diagonal(self):
+            """
+            We can calculate the diagonal of the bounding box more efficiently because
+            we know it's a square.
+            """
+            return self._diagonal
+
+        def get_diagonal(self):
+            return float(self._diagonal)
 
         @ShapeMeta.point('c')
         def center(self):
